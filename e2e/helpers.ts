@@ -17,7 +17,8 @@ export type Lang = 'ru' | 'en';
 
 /** Boots the app past onboarding with deterministic, quiet settings. */
 export async function boot(page: Page, opts: { lang?: Lang; renderMode?: '3d' | '2d'; onboarded?: boolean; channel?: string } = {}): Promise<void> {
-  const { lang = 'en', renderMode = '3d', onboarded = true } = opts;
+  // SVG/DOM is the base interactive layer (F1-045); CPU-rendered WebGL in CI is too slow for UI flows.
+  const { lang = 'en', renderMode = '2d', onboarded = true } = opts;
   await page.addInitScript(
     ({ lang, renderMode, onboarded }) => {
       if (sessionStorage.getItem('e2e-booted')) return;

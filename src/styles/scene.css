@@ -189,7 +189,8 @@
 .cam-tag {
   position: absolute;
   left: 14px;
-  top: calc(var(--safe-top, 0px) + 78px);
+  /* Below the Live header and driver chip strip. */
+  top: calc(var(--safe-top, 0px) + 112px);
   display: flex;
   align-items: center;
   gap: 6px;

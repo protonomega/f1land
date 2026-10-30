@@ -1,5 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { createPortal } from 'react-dom';
 import { DRIVER_BY_ID, TEAM_BY_ID } from '@/data/teams';
 import { fmtCountdown, t } from '@/i18n/core';
 import { haptic } from '@/telegram/sdk';
@@ -359,7 +360,19 @@ export function SwipeConfirm({ label, sub, disabled, onConfirm }: { label: strin
 /* ------------------------------------------------------------------ */
 
 export function Sheet({ open, onClose, children, title, label }: { open: boolean; onClose: () => void; children: ReactNode; title?: ReactNode; label: string }) {
-  return (
+  const close = useRef(onClose);
+  close.current = onClose;
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close.current();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
+  // Portaled to the app root: screens scroll and animate (transform), which would trap the
+  // sheet's stacking and position under the nav bar.
+  const root = typeof document !== 'undefined' ? (document.querySelector('.app') ?? document.body) : null;
+  if (!root) return null;
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
@@ -391,7 +404,8 @@ export function Sheet({ open, onClose, children, title, label }: { open: boolean
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    root,
   );
 }
 

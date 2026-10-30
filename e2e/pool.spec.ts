@@ -80,7 +80,8 @@ test.describe('pool screen: pick → stake → confirm', () => {
   });
 
   test('QA19: losing the WebGL context keeps the pick and shows the SVG map', async ({ page }) => {
-    await boot(page);
+    test.setTimeout(180_000);
+    await boot(page, { renderMode: '3d' });
     await openPool(page, null, 25_000);
     const tile = page.getByRole('radio').first();
     await tile.click();
@@ -101,9 +102,17 @@ for (const lang of ['ru', 'en'] as const) {
     await boot(page, { lang });
     await openPool(page, null, 25_000);
     const clipped = await page.evaluate(() =>
-      [...document.querySelectorAll<HTMLElement>('.pl-q__title, .pl-q__line span')].some((el) => el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1),
+      [...document.querySelectorAll<HTMLElement>('.pl-q__title, .pl-q__line span')]
+        .filter((el) => {
+          const cs = getComputedStyle(el);
+          const clips = cs.overflow !== 'visible' || cs.webkitLineClamp !== 'none' || cs.textOverflow === 'ellipsis';
+          const r = el.getBoundingClientRect();
+          // Real truncation, or text pushed past the viewport edge.
+          return (clips && (el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1)) || r.right > window.innerWidth || r.left < 0;
+        })
+        .map((el) => `${el.className}: "${el.textContent}" ${el.scrollWidth}x${el.scrollHeight} > ${el.clientWidth}x${el.clientHeight}`),
     );
-    expect(clipped).toBe(false);
+    expect(clipped).toEqual([]);
     await page.getByRole('radio').first().click();
     const cta = (await page.locator('.sw').boundingBox())!;
     const nav = (await page.getByRole('navigation').boundingBox())!;

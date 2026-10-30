@@ -861,6 +861,7 @@
   line-height: 1.3;
 }
 .cf__pick {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -2964,9 +2965,11 @@
   letter-spacing: 0.08em;
 }
 .cf__stamp {
+  /* Straddles the ticket's tear line above the odds; never covers ticket data. */
   position: absolute;
-  right: 14px;
-  bottom: 18px;
+  z-index: 2;
+  right: 10px;
+  top: -31px;
   display: flex;
   flex-direction: column;
   align-items: center;

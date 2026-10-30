@@ -1,17 +1,9 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect, type ComponentType } from 'react';
 import { createRoot } from 'react-dom/client';
 import { HomeScreen } from '@/screens/Home';
 import { LiveScreen } from '@/screens/Live';
 import { MyPoolsScreen, EntryScreen } from '@/screens/MyPools';
 import { PoolScreen } from '@/screens/Pool';
-import { RacesScreen, MeetingScreen, SessionScreen } from '@/screens/Races';
-import { CircuitScreen } from '@/screens/Circuit';
-import { DriverScreen } from '@/screens/Driver';
-import { ProfileScreen } from '@/screens/Profile';
-import { WalletScreen } from '@/screens/Wallet';
-import { LeaderboardScreen } from '@/screens/Leaderboard';
-import { RewardsScreen } from '@/screens/Rewards';
-import { HistoryScreen } from '@/screens/History';
 import { SettingsScreen, useApplySettings } from '@/screens/Settings';
 import { Onboarding } from '@/screens/Onboarding';
 import { SceneHost } from '@/app/SceneHost';
@@ -37,6 +29,45 @@ import '@/styles/app.css';
 import '@/styles/restored.css';
 // After app.css so screen styles win ties in the cascade.
 import '@/styles/screens.css';
+
+/* Core flows (Home, Live, Pool, My Pools) ship in the entry chunk; the rest load on demand. */
+const SCREEN_CHUNKS = {
+  races: () => import('@/screens/Races'),
+  circuit: () => import('@/screens/Circuit'),
+  driver: () => import('@/screens/Driver'),
+  profile: () => import('@/screens/Profile'),
+  wallet: () => import('@/screens/Wallet'),
+  leaderboard: () => import('@/screens/Leaderboard'),
+  rewards: () => import('@/screens/Rewards'),
+  history: () => import('@/screens/History'),
+};
+function lazyScreen<M, K extends keyof M>(load: () => Promise<M>, name: K) {
+  return lazy(async () => ({ default: (await load())[name] as ComponentType<any> }));
+}
+const RacesScreen = lazyScreen(SCREEN_CHUNKS.races, 'RacesScreen');
+const MeetingScreen = lazyScreen(SCREEN_CHUNKS.races, 'MeetingScreen');
+const SessionScreen = lazyScreen(SCREEN_CHUNKS.races, 'SessionScreen');
+const CircuitScreen = lazyScreen(SCREEN_CHUNKS.circuit, 'CircuitScreen');
+const DriverScreen = lazyScreen(SCREEN_CHUNKS.driver, 'DriverScreen');
+const ProfileScreen = lazyScreen(SCREEN_CHUNKS.profile, 'ProfileScreen');
+const WalletScreen = lazyScreen(SCREEN_CHUNKS.wallet, 'WalletScreen');
+const LeaderboardScreen = lazyScreen(SCREEN_CHUNKS.leaderboard, 'LeaderboardScreen');
+const RewardsScreen = lazyScreen(SCREEN_CHUNKS.rewards, 'RewardsScreen');
+const HistoryScreen = lazyScreen(SCREEN_CHUNKS.history, 'HistoryScreen');
+
+// Warm the screen chunks once the first screen is idle, so navigation never waits on the network.
+{
+  const idle = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 1500));
+  idle(() => Object.values(SCREEN_CHUNKS).forEach((load) => void load()));
+}
+
+function ScreenFallback() {
+  return (
+    <div className="screen-fallback" role="status" aria-live="polite">
+      <span className="loader-ring" />
+    </div>
+  );
+}
 
 registerDict('ru', { ...UI_DICTS.ru, ...F1_I18N.ru });
 registerDict('en', { ...UI_DICTS.en, ...F1_I18N.en });
@@ -129,7 +160,7 @@ function App() {
               {error} <button onClick={() => void open(channelId)}>Retry</button>
             </div>
           )}
-          {content}
+          <Suspense fallback={<ScreenFallback />}>{content}</Suspense>
         </main>
       </div>
       <NavBar openCount={openCount} />

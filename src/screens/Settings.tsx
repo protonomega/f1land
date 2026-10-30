@@ -1,11 +1,11 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { useSettings, resolveQuality, type MotionSetting, type QualitySetting, type RenderMode } from '@/store/settings';
+import { useSettings, resolveQuality, type MotionSetting, type QualitySetting, type ReminderSetting, type RenderMode } from '@/store/settings';
 import { useWallet } from '@/store/wallet';
 import { useRewards } from '@/store/rewards';
 import { useToasts } from '@/store/toasts';
 import { SubHeader } from '@/app/Header';
 import { Card, Segmented } from '@/ui/kit';
-import { IconEye, IconGlobe, IconInfo, IconLayers, IconMap, IconPlay, IconSound, IconSpark, IconVibrate, IconWarning, LogoPulse } from '@/ui/icons';
+import { IconEye, IconGlobe, IconInfo, IconLayers, IconMap, IconPlay, IconSound, IconSpark, IconTimer, IconVibrate, IconWarning, LogoPulse } from '@/ui/icons';
 import { t, type Lang } from '@/i18n/core';
 import { haptic, insideTelegram, setHapticsEnabled } from '@/telegram/sdk';
 import { setSoundEnabled, sfx } from '@/audio/sfx';
@@ -155,6 +155,23 @@ export function SettingsScreen() {
       </Reveal>
 
       <Reveal i={3} className="section">
+        <div className="sc-set-title">{t('rem.group')}</div>
+        <div className="sc-set-group">
+          <Block icon={<IconTimer size={18} />} title={t('rem.setting')} sub={s.reminderMin === 0 ? t('rem.sub.off') : t('rem.sub.on', { n: s.reminderMin })} tone="cyan">
+            <Segmented<`${ReminderSetting}`>
+              label={t('rem.setting')}
+              value={`${s.reminderMin}`}
+              onChange={(v) => s.set({ reminderMin: Number(v) as ReminderSetting })}
+              options={(['0', '30', '60', '120'] as const).map((v) => ({ id: v, label: v === '0' ? t('rem.off') : t('rem.opt', { n: v }) }))}
+            />
+          </Block>
+        </div>
+        <p className="sc-fine">
+          <IconInfo size={12} /> {t('rem.fine')}
+        </p>
+      </Reveal>
+
+      <Reveal i={4} className="section">
         <div className="sc-set-title">{t('settings.about')}</div>
         <Card className="sc-about" pad>
           <div className="sc-about__brand">
@@ -189,7 +206,7 @@ export function SettingsScreen() {
         </button>
       </Reveal>
 
-      <Reveal i={4} className="section">
+      <Reveal i={5} className="section">
         <button
           className="sc-danger"
           onClick={() => {

@@ -49,9 +49,13 @@ export function queueSettlement(m: SettlementMoment): void {
   useCelebrate.getState().push(m);
 }
 
-/** Season rank of the local player right now (cheap: one leaderboard pass). */
-export function currentSeasonRank(): number {
+/** Season standing of the local player right now (cheap: one leaderboard pass). */
+export function currentSeasonStanding(): { rank: number; of: number } {
   const w = useWallet.getState();
   const now = useLive.getState().runner?.nowMs ?? Date.now();
-  return rankFor('season', w.entries, w.xp, now).rank;
+  return rankFor('season', w.entries, w.xp, now);
+}
+
+export function currentSeasonRank(): number {
+  return currentSeasonStanding().rank;
 }

@@ -1,0 +1,21 @@
+import { chromium } from '@playwright/test';
+const browser = await chromium.launch({ executablePath: '/usr/local/bin/google-chrome', args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--no-sandbox'] });
+const page = await browser.newPage({ viewport: { width: 360, height: 800 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+await page.addInitScript(() => { localStorage.setItem('pa-f1-settings', JSON.stringify({ state: { lang: 'ru', quality: 'low', motion: 'reduced', haptics: false, sound: false, renderMode: '3d', camera: 'director', showZones: true, favoriteDriver: null, onboarded: true, reminderMin: 0 }, version: 1 })); });
+await page.goto('http://127.0.0.1:4173/');
+await page.waitForFunction(() => window.__live?.getState().runner?.ready);
+const t0 = Date.now();
+const h = await page.waitForFunction(() => { const now = window.__live.getState().runner?.nowMs; const p = (window.__engine()?.all() ?? []).map((x) => x.pool).filter((p) => p.status === 'OPEN' && p.intake_status === 'ACCEPTING' && Date.parse(p.closes_at) - now > 25000)[0]; return p?.pool_id ?? null; }, null, { timeout: 90000, polling: 500 });
+const id = await h.jsonValue();
+console.log('pool after', Date.now() - t0, 'ms', id);
+await page.evaluate((poolId) => window.__nav.getState().push({ name: 'pool', channelId: window.__live.getState().channelId, poolId }), id);
+await page.waitForSelector('.pl-q__title');
+await page.waitForTimeout(1500);
+console.log(JSON.stringify(await page.evaluate(() => [...document.querySelectorAll('.pl-q__title, .pl-q__line span')].map((el) => ({ cls: el.className, text: el.textContent, sw: el.scrollWidth, cw: el.clientWidth, sh: el.scrollHeight, ch: el.clientHeight })))));
+const tile = page.getByRole('radio').first();
+const bb = await tile.boundingBox(); console.log('tile box', JSON.stringify(bb));
+const dock = await page.locator('.tdock').boundingBox(); console.log('dock box', JSON.stringify(dock));
+const st = await page.evaluate(() => { const s = document.querySelector('.screen'); return { top: s.scrollTop, h: s.scrollHeight, ch: s.clientHeight }; }); console.log('screen', JSON.stringify(st));
+try { await tile.click({ timeout: 8000 }); console.log('click ok'); } catch (e) { console.log('click fail', e.message.split('\n').slice(0, 12).join(' | ')); }
+await page.screenshot({ path: '/tmp/verify/dbg/ru360.png' });
+await browser.close();

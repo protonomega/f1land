@@ -14,6 +14,7 @@ import { useMapCars, useSessionNow } from '@/app/hooks';
 import { poolTexts } from '@/app/poolText';
 import { Card, Section, TeamBar, TyreBadge } from '@/ui/kit';
 import { TrackMap } from '@/ui/TrackMap';
+import { StreakCard } from '@/ui/celebrate/StreakCard';
 import {
   IconArrow,
   IconBroadcast,
@@ -323,6 +324,9 @@ export function HomeScreen() {
           })}
         </div>
       </Section>
+
+      {/* ---------------- Daily check-in ---------------- */}
+      <StreakCard variant="compact" />
 
       {/* ---------------- Promo ---------------- */}
       <Card className="promo" onClick={() => push({ name: 'leaderboard' })} ariaLabel={t('lb.title')}>

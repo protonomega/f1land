@@ -1537,7 +1537,7 @@ input {
 
 .sheet__body {
   overflow-y: auto;
-  padding: 6px 16px 4px;
+  padding: 6px 16px calc(var(--safe-bottom) + 10px);
   scrollbar-width: none;
 }
 

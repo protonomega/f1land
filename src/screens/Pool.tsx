@@ -92,7 +92,13 @@ export function PoolScreen({ poolId }: { poolId: string }) {
   }, [poolId, pool, outcome, stake]);
 
   // Scene framing for this pool (F1-050); frozen during confirmation.
+  const exists = lp !== null;
   useEffect(() => {
+    // A pool that has already been archived has no live scene to frame.
+    if (!exists) {
+      setScene({ layout: 'hidden' });
+      return;
+    }
     setScene({ layout: 'top', labels: [subjectA, subjectB, ...(lp?.focus ?? [])].filter(Boolean) as string[], cameraOverride: pool ? cameraFor(pool, layout) : 'follow' });
     if (subjectA) setFollow(subjectA);
     else if (lp?.focus[0]) setFollow(lp.focus[0]);
@@ -102,7 +108,7 @@ export function PoolScreen({ poolId }: { poolId: string }) {
       setRival(null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [poolId]);
+  }, [poolId, exists]);
 
   // The 3D section scrolls with the page (transform only — no canvas resize).
   useEffect(() => {
@@ -167,13 +173,27 @@ export function PoolScreen({ poolId }: { poolId: string }) {
     return (
       <div className="pl">
         <PoolHead onBack={back} layout="position" title={t('pool.title')} />
-        <div className="pl-gone">
-          <IconLock size={28} />
-          <p>{t('pool.noPools')}</p>
-          <button type="button" className="pl-btn pl-btn--ghost" onClick={() => go('live')}>
-            {t('confirm.track')}
-          </button>
-        </div>
+        <section className="pl-gone" role="status">
+          <span className="pl-gone__ico" aria-hidden="true">
+            <IconLock size={26} />
+          </span>
+          <h1 className="pl-gone__t">{t('pool2.goneTitle')}</h1>
+          <p className="pl-gone__s">{t('pool2.goneSub')}</p>
+          {myEntries.length > 0 && (
+            <button type="button" className="pl-gone__entry" onClick={() => push({ name: 'entry', entryId: myEntries[0]!.id })}>
+              <span>{t('pool2.goneEntry', { o: myEntries[0]!.outcomeLabel })}</span>
+              <IconChevron size={16} />
+            </button>
+          )}
+          <div className="pl-gone__btns">
+            <button type="button" className="pl-btn pl-btn--primary" onClick={() => go('live')}>
+              {t('pool2.goneLive')}
+            </button>
+            <button type="button" className="pl-btn pl-btn--ghost" onClick={() => go('pools')}>
+              {t('pool2.goneMine')}
+            </button>
+          </div>
+        </section>
       </div>
     );
   }

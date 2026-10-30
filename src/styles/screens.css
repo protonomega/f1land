@@ -376,9 +376,9 @@
   z-index: 6;
   margin: 0 -14px 10px;
   padding: calc(var(--safe-top) + 8px) 14px 10px;
-  background: linear-gradient(180deg, #07090b 80%, rgba(7, 9, 11, 0.94));
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  /* Opaque: list rows must not ghost through the season bar and filter tabs. */
+  background: #07090b;
+  box-shadow: 0 12px 18px -10px rgba(0, 0, 0, 0.85);
   border-bottom: 1px solid var(--stroke);
 }
 .sc-season {

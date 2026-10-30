@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { create } from 'zustand';
 import { useLive, onFrame, onMoment } from '@/store/live';
 import { useSettings, prefersReducedMotion, resolveQuality } from '@/store/settings';
-import { RaceScene } from '@/three/engine/RaceScene';
+import type { RaceScene } from '@/three/engine/RaceScene';
 import type { CameraMode } from '@/three/engine/cameraRig';
 import { TrackMap } from '@/ui/TrackMap';
 import { useMapCars } from '@/app/hooks';
@@ -39,6 +39,13 @@ export const useSceneView = create<SceneViewState>((set) => ({
 }));
 
 let activeScene: RaceScene | null = null;
+
+/** The 3D engine (three.js + scene) is its own chunk: the first paint never waits for it. */
+let enginePromise: Promise<typeof import('@/three/engine/RaceScene')> | null = null;
+export function loadEngine(): Promise<typeof import('@/three/engine/RaceScene')> {
+  enginePromise ??= import('@/three/engine/RaceScene');
+  return enginePromise;
+}
 /** WebGL context losses this session: each one steps the quality tier down before the automatic retry. */
 let contextLosses = 0;
 let retryTimer = 0;
@@ -72,6 +79,11 @@ export function SceneHost() {
   const renderMode = useSettings((s) => s.renderMode);
   const runner = useLive((s) => s.runner);
   const use3d = renderMode === '3d' && !webglLost && webglAvailable();
+  useEffect(() => {
+    if (renderMode !== '3d') return;
+    const idle = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 1200));
+    idle(() => void loadEngine());
+  }, [renderMode]);
   return (
     <div className={`scene-host scene-host--${layout}`} aria-hidden={layout === 'hidden'}>
       {runner && layout !== 'hidden' && (use3d ? <Scene3D key={`${runner.manifest.session_id}`} /> : <Scene2D />)}
@@ -116,6 +128,11 @@ function Scene3D() {
   useEffect(() => {
     if (!host.current || !labelsRef.current || !runner) return;
     let disposed = false;
+    let teardown: (() => void) | null = null;
+    setReady(false);
+    setBuildProgress(0);
+    void loadEngine().then(({ RaceScene }) => {
+    if (disposed || !host.current || !labelsRef.current) return;
     const scene = new RaceScene(host.current, {
       quality: effectiveQuality(resolveQuality(quality)),
       reducedMotion: prefersReducedMotion(motion),
@@ -156,8 +173,7 @@ function Scene3D() {
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
-    return () => {
-      disposed = true;
+    teardown = () => {
       cancelAnimationFrame(raf);
       offFrame();
       offMoment();
@@ -165,12 +181,17 @@ function Scene3D() {
       if (activeScene === scene) activeScene = null;
       sceneRef.current = null;
     };
+    });
+    return () => {
+      disposed = true;
+      teardown?.();
+    };
     // Quality change rebuilds the scene; the selection lives in stores and survives (F1-045).
   }, [runner, quality]);
 
   useEffect(() => {
     sceneRef.current?.setReducedMotion(prefersReducedMotion(motion));
-  }, [motion]);
+  }, [motion, ready]);
 
   useEffect(() => {
     sceneRef.current?.follow(followId);
@@ -183,13 +204,13 @@ function Scene3D() {
   }, [camera, view.cameraOverride, ready]);
   useEffect(() => {
     sceneRef.current?.freezeCamera(view.frozen);
-  }, [view.frozen]);
+  }, [view.frozen, ready]);
   useEffect(() => {
     sceneRef.current?.setZone(view.zone, view.frameZone);
   }, [view.zone, view.frameZone, ready]);
   useEffect(() => {
     sceneRef.current?.showZones(showZones || view.zone !== null);
-  }, [showZones, view.zone]);
+  }, [showZones, view.zone, ready]);
   useEffect(() => {
     const s = sceneRef.current;
     if (!s || !live) return;
@@ -207,7 +228,7 @@ function Scene3D() {
     s.setLabelIds([...ids]);
     s.setPositions(new Map(live.cars.map((c) => [c.id, c.position])));
     s.setSectorFlags(live.sectorFlags);
-  }, [live, followId, rivalId, view.labels]);
+  }, [live, followId, rivalId, view.labels, ready]);
 
   return (
     <>

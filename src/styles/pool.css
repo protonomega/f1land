@@ -265,24 +265,35 @@
   font-size: 13.5px;
 }
 .ot--row {
-  flex-direction: row;
-  justify-content: space-between;
-  gap: 8px;
-  min-height: 46px;
-  padding: 8px 10px;
+  /* Badge | label over odds: the label gets the full column (no mid-word breaks like "Disqualifie-d"). */
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas: 'icon text' 'icon odds';
+  align-items: center;
+  justify-content: stretch;
+  column-gap: 9px;
+  row-gap: 1px;
+  min-height: 50px;
+  padding: 7px 10px;
   text-align: left;
 }
 .ot--row .ot__icon {
+  grid-area: icon;
   min-height: 0;
 }
 .ot--row .ot__text {
-  flex: 1;
+  grid-area: text;
+  min-width: 0;
 }
 .ot--row .ot__label {
   font-size: 12.5px;
   font-weight: 600;
+  -webkit-line-clamp: 1;
+  overflow-wrap: normal;
 }
 .ot--row .ot__odds {
+  grid-area: odds;
+  justify-self: start;
   font-size: 13px;
 }
 .ot__code {
@@ -861,6 +872,7 @@
   line-height: 1.3;
 }
 .cf__pick {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -2964,9 +2976,11 @@
   letter-spacing: 0.08em;
 }
 .cf__stamp {
+  /* Straddles the ticket's tear line above the odds; never covers ticket data. */
   position: absolute;
-  right: 14px;
-  bottom: 18px;
+  z-index: 2;
+  right: 10px;
+  top: -31px;
   display: flex;
   flex-direction: column;
   align-items: center;

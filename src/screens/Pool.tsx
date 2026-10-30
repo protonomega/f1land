@@ -445,6 +445,20 @@ export function PoolScreen({ poolId }: { poolId: string }) {
                   <b>{outcomeLabel(confirmOutcome, pool.market_id)}</b>
                 </div>
                 <span className="cf__odds num">{fmtOdds(confirm.mult)}x</span>
+                <AnimatePresence>
+                  {confirm.phase === 'ok' && confirm.entry && (
+                    <motion.div
+                      key="stamp"
+                      className="cf__stamp"
+                      initial={{ scale: 2.4, opacity: 0, rotate: -24 }}
+                      animate={{ scale: 1, opacity: 1, rotate: -9 }}
+                      transition={{ type: 'spring', stiffness: 520, damping: 22, mass: 0.8 }}
+                    >
+                      <span>{t('pool2.stamp')}</span>
+                      <small className="num">{confirm.entry.id}</small>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
               <dl className="cf__grid">
                 <div>
@@ -466,20 +480,6 @@ export function PoolScreen({ poolId }: { poolId: string }) {
                   </dd>
                 </div>
               </dl>
-              <AnimatePresence>
-                {confirm.phase === 'ok' && confirm.entry && (
-                  <motion.div
-                    key="stamp"
-                    className="cf__stamp"
-                    initial={{ scale: 2.4, opacity: 0, rotate: -24 }}
-                    animate={{ scale: 1, opacity: 1, rotate: -9 }}
-                    transition={{ type: 'spring', stiffness: 520, damping: 22, mass: 0.8 }}
-                  >
-                    <span>{t('pool2.stamp')}</span>
-                    <small className="num">{confirm.entry.id}</small>
-                  </motion.div>
-                )}
-              </AnimatePresence>
               <Sparks fire={confirm.phase === 'ok' ? 1 : 0} count={22} spread={110} />
             </div>
             <AnimatePresence mode="wait">

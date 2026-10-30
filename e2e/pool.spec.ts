@@ -80,7 +80,8 @@ test.describe('pool screen: pick → stake → confirm', () => {
   });
 
   test('QA19: losing the WebGL context keeps the pick and shows the SVG map', async ({ page }) => {
-    await boot(page);
+    test.setTimeout(180_000);
+    await boot(page, { renderMode: '3d' });
     await openPool(page, null, 25_000);
     const tile = page.getByRole('radio').first();
     await tile.click();

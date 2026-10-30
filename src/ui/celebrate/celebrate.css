@@ -97,6 +97,7 @@
   background: repeating-conic-gradient(#fff 0 25%, transparent 0 50%) 0 0 / 24px 24px;
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 28%, #000 72%, transparent);
   mask-image: linear-gradient(90deg, transparent, #000 28%, #000 72%, transparent);
+  will-change: transform;
   animation: cel-flag 6s linear infinite;
 }
 .cel .cel__flag--t {
@@ -197,6 +198,7 @@
   background: repeating-conic-gradient(from 0deg, rgba(198, 255, 61, 0.14) 0 5deg, transparent 5deg 15deg);
   -webkit-mask-image: radial-gradient(circle, #000 0, rgba(0, 0, 0, 0.5) 24%, transparent 58%);
   mask-image: radial-gradient(circle, #000 0, rgba(0, 0, 0, 0.5) 24%, transparent 58%);
+  will-change: transform;
   animation: cel-spin 46s linear infinite;
 }
 .cel .cel__bezel {
@@ -206,6 +208,7 @@
   background: repeating-conic-gradient(from -1deg, rgba(198, 255, 61, 0.95) 0 2deg, transparent 2deg 10deg);
   -webkit-mask-image: radial-gradient(circle, transparent 0 51px, #000 52px 55px, transparent 56px);
   mask-image: radial-gradient(circle, transparent 0 51px, #000 52px 55px, transparent 56px);
+  will-change: transform;
   animation: cel-spin 28s linear infinite;
 }
 .cel .cel__ripple {
@@ -564,12 +567,12 @@
   width: 100%;
   margin-top: 20px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
   gap: 10px;
 }
 .cel .cel__actions .btn {
   height: 50px;
-  padding: 0 12px;
+  padding: 0 8px;
   font-size: 15px;
 }
 
@@ -597,6 +600,94 @@
 
 .cel .confetti {
   z-index: 4;
+}
+
+/* Short screens: the whole moment still fits without scrolling on 360x740-class phones. */
+@media (max-height: 780px) {
+  .cel .cel__scroll {
+    padding-top: calc(var(--safe-top) + 16px);
+    padding-bottom: calc(var(--safe-bottom) + 16px);
+  }
+  .cel .cel__kicker {
+    margin-bottom: 12px;
+  }
+  .cel .cel__medal {
+    width: 92px;
+    height: 92px;
+  }
+  .cel .cel__bezel {
+    -webkit-mask-image: radial-gradient(circle, transparent 0 41px, #000 42px 45px, transparent 46px);
+    mask-image: radial-gradient(circle, transparent 0 41px, #000 42px 45px, transparent 46px);
+  }
+  .cel .cel__disc {
+    width: 74px;
+    height: 74px;
+  }
+  .cel .cel__disc .icon {
+    width: 42px;
+    height: 42px;
+  }
+  .cel .cel__pay {
+    margin-top: 12px;
+  }
+  .cel .cel__amt {
+    font-size: 46px;
+  }
+  .cel .cel__unit {
+    margin-top: 8px;
+  }
+  .cel .cel__chips {
+    margin-top: 12px;
+  }
+  .cel .cel__ticket {
+    margin-top: 14px;
+    padding: 11px 14px 11px 16px;
+  }
+  .cel .cel__rows {
+    margin-top: 9px;
+    padding-top: 9px;
+  }
+  .cel .cel__lvl {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  .cel .cel__ach {
+    padding-top: 7px;
+    padding-bottom: 7px;
+  }
+  .cel .cel__stat {
+    padding: 9px 12px 10px;
+  }
+  .cel .cel__actions {
+    margin-top: 14px;
+  }
+  .cel .cel__actions .btn {
+    height: 46px;
+  }
+}
+@media (max-height: 680px) {
+  .cel .cel__medal {
+    width: 76px;
+    height: 76px;
+  }
+  .cel .cel__bezel {
+    -webkit-mask-image: radial-gradient(circle, transparent 0 34px, #000 35px 37px, transparent 38px);
+    mask-image: radial-gradient(circle, transparent 0 34px, #000 35px 37px, transparent 38px);
+  }
+  .cel .cel__disc {
+    width: 62px;
+    height: 62px;
+  }
+  .cel .cel__disc .icon {
+    width: 34px;
+    height: 34px;
+  }
+  .cel .cel__amt {
+    font-size: 40px;
+  }
+  .cel .cel__sub {
+    display: none;
+  }
 }
 
 /* Reduced motion: no movement, no confetti; everything is present from the first frame. */
@@ -827,15 +918,15 @@
   font-weight: 700;
 }
 .cel-loss .cel-loss__stake small {
-  margin-left: 2px;
+  margin-left: 1px;
   font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.1em;
   color: var(--muted);
 }
 .cel-loss .cel-loss__chip {
   height: 24px;
-  padding: 0 9px;
+  padding: 0 8px;
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -854,11 +945,11 @@
 .cel-loss .cel-loss__proof {
   margin-left: auto;
   height: 34px;
-  padding: 0 4px 0 10px;
+  padding: 0 2px 0 6px;
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  font-size: 13px;
+  gap: 1px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--text-2);
 }
@@ -1416,6 +1507,7 @@
   padding: 11px 6px 12px;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   gap: 6px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.04);
@@ -1425,7 +1517,7 @@
   font-size: 10px;
   line-height: 1.25;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
 }

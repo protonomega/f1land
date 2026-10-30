@@ -181,17 +181,27 @@
   height: 22px;
 }
 .ot__mine {
+  /* Tab hanging from the tile's top edge; .ot--mine pads the content below it. */
   position: absolute;
-  top: 6px;
-  left: 6px;
-  padding: 2px 5px;
-  border-radius: 5px;
-  background: rgba(47, 230, 255, 0.16);
+  z-index: 1;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1px 7px 2px;
+  border: 1px solid rgba(47, 230, 255, 0.55);
+  border-top: 0;
+  border-radius: 0 0 7px 7px;
+  background: #0b2a31;
   color: var(--cyan);
+  line-height: 12px;
+  white-space: nowrap;
   font-size: 8.5px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+.ot--mine:not(.ot--row) {
+  padding-top: 19px;
 }
 .ot--on {
   border-color: var(--lime);
@@ -265,25 +275,32 @@
   font-size: 13.5px;
 }
 .ot--row {
-  flex-direction: row;
-  justify-content: space-between;
-  gap: 8px;
+  /* Full-width list row (badge | label | odds): long RU/EN labels never break mid-word. */
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'icon text odds';
+  align-items: center;
+  column-gap: 10px;
   min-height: 46px;
-  padding: 8px 10px;
+  padding: 6px 12px;
   text-align: left;
 }
 .ot--row .ot__icon {
+  grid-area: icon;
   min-height: 0;
 }
 .ot--row .ot__text {
-  flex: 1;
+  grid-area: text;
+  min-width: 0;
 }
 .ot--row .ot__label {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
+  overflow-wrap: normal;
 }
 .ot--row .ot__odds {
-  font-size: 13px;
+  grid-area: odds;
+  font-size: 13.5px;
 }
 .ot__code {
   display: grid;
@@ -741,7 +758,7 @@
 }
 .og__minor {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
 }
 
@@ -861,6 +878,7 @@
   line-height: 1.3;
 }
 .cf__pick {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1881,13 +1899,12 @@
   border-radius: 22px;
   background:
     radial-gradient(90% 60% at 50% 0%, rgba(198, 255, 61, 0.09), transparent 70%),
-    linear-gradient(180deg, rgba(22, 30, 34, 0.96), rgba(9, 12, 14, 0.98));
+    linear-gradient(180deg, #161e22, #090c0e);
+  /* Fully opaque: outcome text must never ghost through the ticket. */
   box-shadow:
     0 -14px 36px rgba(0, 0, 0, 0.55),
     0 0 0 1px rgba(0, 0, 0, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.07);
-  backdrop-filter: blur(18px) saturate(1.25);
-  -webkit-backdrop-filter: blur(18px) saturate(1.25);
   transition: border-color 0.35s, box-shadow 0.35s;
 }
 .tdock--slim {
@@ -2964,9 +2981,11 @@
   letter-spacing: 0.08em;
 }
 .cf__stamp {
+  /* Straddles the ticket's tear line above the odds; never covers ticket data. */
   position: absolute;
-  right: 14px;
-  bottom: 18px;
+  z-index: 2;
+  right: 10px;
+  top: -31px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3048,6 +3067,9 @@
 @media (max-width: 379px) {
   .pl-q__title {
     font-size: 18px;
+  }
+  .ot--zone .ot__label {
+    font-size: 12px;
   }
   .pl-head__title {
     font-size: 10.5px;

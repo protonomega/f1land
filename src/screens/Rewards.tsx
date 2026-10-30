@@ -13,6 +13,7 @@ import { haptic } from '@/telegram/sdk';
 import { sfx } from '@/audio/sfx';
 import { AchGlyph, Bar, PageHead, Reveal, useBack, useReduced } from './common';
 import { AchievementSheet, AchievementsGrid } from './Profile';
+import { StreakCard } from '@/ui/celebrate/StreakCard';
 
 export function RewardsScreen() {
   const back = useBack();
@@ -56,6 +57,9 @@ export function RewardsScreen() {
       <SubHeader onBack={back} />
       <PageHead kicker={t('scr.rewards.kicker')} title={t('rewards.title')} sub={t('rewards.sub')} />
       <Reveal i={0}>
+        <StreakCard />
+      </Reveal>
+      <Reveal i={1} style={{ marginTop: 12 }}>
         <Card glow pad={false} className="sc-rhero">
           <div className="sc-rhero__gift" aria-hidden="true">
             <IconGift size={46} />
@@ -95,7 +99,7 @@ export function RewardsScreen() {
           {list.map((m, i) => {
             const isClaimed = !!claimed[m.claimKey];
             return (
-              <Reveal key={m.def.id} i={i + 1}>
+              <Reveal key={m.def.id} i={i + 2}>
                 <div className="sc-mission" data-done={m.done || undefined} data-claimed={isClaimed || undefined} data-tone={m.def.tone}>
                   <span className="sc-mission__ic">
                     <AchGlyph icon={m.def.icon} size={22} />

@@ -25,6 +25,9 @@ import { usePools } from '@/demo/poolEngine';
 import { useSettings } from '@/store/settings';
 import { useToasts } from '@/store/toasts';
 import { NavBar } from '@/ui/NavBar';
+import { Celebration } from '@/ui/celebrate/Celebration';
+import { PlayReminder } from '@/ui/celebrate/PlayReminder';
+import { useCelebrate } from '@/ui/celebrate/store';
 import { registerDict, setLang } from '@/i18n/core';
 import { UI_DICTS } from '@/i18n/ui';
 import { F1_I18N } from '@/domain/markets/i18n';
@@ -50,6 +53,7 @@ if (import.meta.env.DEV || import.meta.env.VITE_E2E === '1') {
     __live: useLive,
     __settings: useSettings,
     __wallet: useWallet,
+    __celebrate: useCelebrate,
     __engine: getEngine,
     __family: (id: string) => CATALOG[id as MarketId]?.family,
   });
@@ -114,7 +118,40 @@ function App() {
   useEffect(() => { setBackButton(stack.length ? back : null); return () => setBackButton(null); }, [stack.length, back]);
   const live = route.name === 'tab' && route.tab === 'live';
   const content = routeContent(route);
-  return <div className="app"><div className="app__bg-lines" /><SceneHost /><div className="screen-stack"><main key={JSON.stringify(route)} className={`screen ${live ? 'screen--flush' : ''}`}>{error && <div role="alert" className="statusbar statusbar--red">{error} <button onClick={() => void open(channelId)}>Retry</button></div>}{content}</main></div><NavBar openCount={openCount} /><div className="toast-wrap" aria-live="polite">{toasts.map((item) => <div className={`toast toast--${item.kind}`} key={item.id}><div><strong>{item.title}</strong>{item.body && <div>{item.body}</div>}</div>{item.action && <button onClick={item.action.run}>{item.action.label}</button>}<button aria-label="Close" onClick={() => dismiss(item.id)}>×</button></div>)}</div><Onboarding /></div>;
+  return (
+    <div className="app">
+      <div className="app__bg-lines" />
+      <SceneHost />
+      <div className="screen-stack">
+        <main key={JSON.stringify(route)} className={`screen ${live ? 'screen--flush' : ''}`}>
+          {error && (
+            <div role="alert" className="statusbar statusbar--red">
+              {error} <button onClick={() => void open(channelId)}>Retry</button>
+            </div>
+          )}
+          {content}
+        </main>
+      </div>
+      <NavBar openCount={openCount} />
+      <div className="toast-wrap" aria-live="polite">
+        {toasts.map((item) => (
+          <div className={`toast toast--${item.kind}`} key={item.id}>
+            <div>
+              <strong>{item.title}</strong>
+              {item.body && <div>{item.body}</div>}
+            </div>
+            {item.action && <button onClick={item.action.run}>{item.action.label}</button>}
+            <button aria-label="Close" onClick={() => dismiss(item.id)}>
+              ×
+            </button>
+          </div>
+        ))}
+      </div>
+      <Celebration />
+      <PlayReminder />
+      <Onboarding />
+    </div>
+  );
 }
 
 createRoot(document.getElementById('root')!).render(<App />);

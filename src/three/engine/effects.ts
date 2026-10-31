@@ -5,14 +5,13 @@ import { glowRingTexture, softDotTexture } from '@/three/track/textures';
 export class SelectionRing {
   readonly mesh: THREE.Mesh;
   private mat: THREE.MeshBasicMaterial;
-  private t = 0;
   private flareT = 1;
   /** Short expanding flare (overtake by the followed car). */
   flare(): void {
     this.flareT = 0;
   }
   constructor(color: string, size = 9) {
-    this.mat = new THREE.MeshBasicMaterial({ map: glowRingTexture(), color, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.95 });
+    this.mat = new THREE.MeshBasicMaterial({ map: glowRingTexture(), color, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.28 });
     this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(size, size), this.mat);
     this.mesh.rotation.x = -Math.PI / 2;
     this.mesh.renderOrder = 8;
@@ -23,14 +22,13 @@ export class SelectionRing {
       this.mesh.visible = false;
       return;
     }
-    this.t += dt;
     this.mesh.visible = true;
     this.mesh.position.set(pos.x, 0.06, pos.z);
     this.flareT = Math.min(1, this.flareT + dt / 0.9);
+    // Steady and faint: it marks the car, it shouldn't compete with it. Only an overtake flares.
     const fl = reduced ? 0 : Math.sin(this.flareT * Math.PI) * (1 - this.flareT * 0.4);
-    const pulse = reduced ? 1 : 1 + Math.sin(this.t * 4) * 0.07;
-    this.mesh.scale.setScalar(pulse + fl * 0.9);
-    this.mat.opacity = Math.min(1, (reduced ? 0.9 : 0.75 + Math.sin(this.t * 4) * 0.2) + fl * 0.5);
+    this.mesh.scale.setScalar(1 + fl * 0.9);
+    this.mat.opacity = Math.min(1, 0.28 + fl * 0.5);
   }
   dispose(): void {
     this.mesh.geometry.dispose();

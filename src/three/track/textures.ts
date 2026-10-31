@@ -310,7 +310,7 @@ export function softDotTexture(): THREE.Texture {
   return tex;
 }
 
-export function labelTexture(text: string, color = '#ffffff', bg = 'rgba(0,0,0,0)', w = 256, h = 64, font = '700 38px "Titillium Web", sans-serif'): THREE.CanvasTexture {
+export function labelTexture(text: string, color = '#ffffff', bg = 'rgba(0,0,0,0)', w = 256, h = 64, font = '700 38px "Onest Variable", sans-serif'): THREE.CanvasTexture {
   const [c, g] = canvas(w, h);
   g.fillStyle = bg;
   g.fillRect(0, 0, w, h);

@@ -102,7 +102,7 @@ export function LeaderboardScreen() {
   return (
     <>
       <SubHeader onBack={back} />
-      <PageHead kicker={t('scr.lb.kicker')} title={t('lb.title')} sub={t('lb.sub')} />
+      <PageHead title={t('lb.title')} sub={t('lb.sub')} />
       <Segmented<LbPeriod>
         label={t('lb.title')}
         value={period}

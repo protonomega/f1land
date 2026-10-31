@@ -6,7 +6,7 @@ import { useNav } from '@/store/nav';
 import { useToasts } from '@/store/toasts';
 import { achievements, missions, weekStart, type AchievementState, type MissionState } from '@/demo/progress';
 import { SubHeader } from '@/app/Header';
-import { Card, useNow } from '@/ui/kit';
+import { useNow } from '@/ui/kit';
 import { IconCheck, IconGift, IconPlay, IconTimer } from '@/ui/icons';
 import { fmtDuration, fmtNumber, t } from '@/i18n/core';
 import { haptic } from '@/telegram/sdk';
@@ -32,7 +32,6 @@ export function RewardsScreen() {
   const claimable = list.filter((m) => m.done && !claimed[m.claimKey]);
   const doneCount = list.filter((m) => m.done).length;
   const pot = claimable.reduce((s, m) => s + m.def.reward, 0);
-  const total = list.reduce((s, m) => s + m.def.reward, 0);
   const resetIn = weekStart(now) + 7 * 86_400_000 - now;
 
   const claim = (ms: MissionState[]) => {
@@ -55,46 +54,25 @@ export function RewardsScreen() {
   return (
     <>
       <SubHeader onBack={back} />
-      <PageHead kicker={t('scr.rewards.kicker')} title={t('rewards.title')} sub={t('rewards.sub')} />
+      <PageHead title={t('rewards.title')} sub={t('rewards.sub')} />
       <Reveal i={0}>
         <StreakCard />
       </Reveal>
-      <Reveal i={1} style={{ marginTop: 12 }}>
-        <Card glow pad={false} className="sc-rhero">
-          <div className="sc-rhero__gift" aria-hidden="true">
-            <IconGift size={46} />
-          </div>
-          <div className="sc-rhero__body">
-            <div className="sc-kicker">{t('rewards.missions')}</div>
-            <div className="sc-rhero__v">
-              <b className="num">{doneCount}</b>
-              <span className="num">/{list.length}</span>
-            </div>
-            <Bar value={doneCount} max={list.length} label={t('rewards.missions')} />
-            <div className="sc-rhero__meta">
-              <span>
-                <IconTimer size={13} />
-                {t('scr.rewards.resets', { d: fmtDuration(resetIn) })}
-              </span>
-              <span className="num lime">
-                {t('scr.rewards.pool', { n: fmtNumber(total) })}
-              </span>
-            </div>
-            {claimable.length > 0 && (
-              <button className="btn btn--primary btn--block sc-rhero__btn" onClick={() => claim(claimable)}>
-                <IconGift size={18} />
-                {t('scr.rewards.claimAll', { n: fmtNumber(pot) })}
-              </button>
-            )}
-          </div>
-        </Card>
-      </Reveal>
-
       <section className="section">
         <div className="section__head">
-          <h2 className="section__title">{t('rewards.missions')}</h2>
-          <span className="sc-note">{t('scr.rewards.weekly')}</span>
+          <h2 className="section__title">
+            {t('rewards.missions')} <span className="sc-rcount num">{doneCount}/{list.length}</span>
+          </h2>
+          <span className="sc-note">
+            <IconTimer size={12} /> {t('scr.rewards.resets', { d: fmtDuration(resetIn) })}
+          </span>
         </div>
+        {claimable.length > 0 && (
+          <button className="btn btn--primary btn--block sc-rhero__btn" onClick={() => claim(claimable)}>
+            <IconGift size={18} />
+            {t('scr.rewards.claimAll', { n: fmtNumber(pot) })}
+          </button>
+        )}
         <div className="sc-missions">
           {list.map((m, i) => {
             const isClaimed = !!claimed[m.claimKey];

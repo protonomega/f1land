@@ -10,7 +10,7 @@ import { fmtClock, fmtGap, fmtLap, fmtNumber, fmtOdds, fmtSec, t } from '@/i18n/
 import { msUntilLock } from '@/domain/lifecycle';
 import { marketTitle, outcomeShort, poolTexts } from '@/app/poolText';
 import { useSessionNow } from '@/app/hooks';
-import { DriverAvatar, LineChart, TyreBadge } from '@/ui/kit';
+import { LineChart, TyreBadge } from '@/ui/kit';
 import { IconChevron, IconLock, IconPit } from '@/ui/icons';
 import { haptic } from '@/telegram/sdk';
 import { CountdownRing, PoolMeta } from './parts';
@@ -110,9 +110,9 @@ function carGap(c: LiveCar, quali: boolean, interval: boolean): string {
 /* Compact timing strip (top-5 visible, horizontally scrollable)        */
 /* ------------------------------------------------------------------ */
 
-export function TowerStrip({ cars, followId, quali, cut, open, onToggle, onPick }: { cars: LiveCar[]; followId: string | null; quali: boolean; cut: number | null; open: boolean; onToggle: () => void; onPick: (id: string) => void }) {
+export function TowerStrip({ cars, followId, quali, cut, onPick }: { cars: LiveCar[]; followId: string | null; quali: boolean; cut: number | null; onPick: (id: string) => void }) {
   const ref = useRef<HTMLDivElement>(null);
-  // Keep the followed driver in view when it is outside the top-5.
+  // Keep the followed driver in view when it is outside the visible part.
   useEffect(() => {
     const node = ref.current?.querySelector<HTMLElement>('.tw-chip--on');
     if (node && ref.current) {
@@ -131,64 +131,13 @@ export function TowerStrip({ cars, followId, quali, cut, open, onToggle, onPick 
             style={{ ['--team' as string]: teamColor(c.id) }}
             onClick={() => onPick(c.id)}
             aria-label={`P${c.position} ${DRIVER_BY_ID[c.id]?.lastName ?? c.id}`}
+            aria-pressed={c.id === followId}
           >
             <span className="tw-chip__top">
               <span className="tw-chip__pos num">{c.position}</span>
               <span className="tw-chip__code">{DRIVER_BY_ID[c.id]?.code}</span>
-              {c.boost && <span className="tw-chip__boost" title="Overtake Mode" />}
             </span>
             <span className={`tw-chip__gap num ${c.mode === 'PIT_LANE' || c.mode === 'PIT_STOP' ? 'cyan' : ''}`}>{carGap(c, quali, true)}</span>
-          </button>
-        ))}
-      </div>
-      <button type="button" className={`tw-strip__more ${open ? 'tw-strip__more--on' : ''}`} onClick={onToggle} aria-expanded={open} aria-label={open ? t('ui.collapse') : t('lv.fullTower')}>
-        <IconChevron dir={open ? 'up' : 'down'} size={16} />
-      </button>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Full tower (expanded)                                               */
-/* ------------------------------------------------------------------ */
-
-export function TowerPanel({ cars, followId, quali, cut, onPick, onClose }: { cars: LiveCar[]; followId: string | null; quali: boolean; cut: number | null; onPick: (id: string) => void; onClose: () => void }) {
-  const [interval, setInterval_] = useState(true);
-  return (
-    <div className="tw-panel" role="table" aria-label={t('live.timing')}>
-      <div className="tw-panel__head" role="row">
-        <span className="tw-panel__title">{t('live.timing')}</span>
-        {!quali && (
-          <button type="button" className="tw-panel__toggle" onClick={() => (haptic.tap(), setInterval_(!interval))}>
-            {interval ? t('live.interval') : t('live.gap')}
-            <IcSwapCar size={12} />
-          </button>
-        )}
-        <button type="button" className="tw-panel__close" aria-label={t('ui.close')} onClick={onClose}>
-          ×
-        </button>
-      </div>
-      <div className="tw-panel__rows">
-        {cars.map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            role="row"
-            className={`tw-row ${c.id === followId ? 'tw-row--on' : ''} ${c.status !== 'ACTIVE' || c.eliminatedIn ? 'tw-row--out' : ''} ${quali && cut !== null && c.position === cut + 1 ? 'tw-row--cut' : ''}`}
-            onClick={() => onPick(c.id)}
-          >
-            <span className="tw-row__pos num">{c.position}</span>
-            <span className="tw-row__bar" style={{ background: teamColor(c.id) }} />
-            <span className="tw-row__code">{DRIVER_BY_ID[c.id]?.code}</span>
-            <span className={`tw-row__gap num ${c.mode === 'PIT_LANE' || c.mode === 'PIT_STOP' ? 'cyan' : ''}`}>{carGap(c, quali, interval)}</span>
-            {!quali && (
-              <span className="tw-row__tyre">
-                <TyreBadge compound={c.tyre} size={16} />
-                <span className="num">{c.tyreAgeLaps}</span>
-              </span>
-            )}
-            {!quali && <span className="tw-row__pits num">{c.pitStops > 0 ? `${c.pitStops}×` : ''}</span>}
-            {c.boost && <span className="tw-row__boost" title="Overtake Mode" />}
           </button>
         ))}
       </div>
@@ -200,64 +149,42 @@ export function TowerPanel({ cars, followId, quali, cut, onPick, onClose }: { ca
 /* Followed driver card                                                */
 /* ------------------------------------------------------------------ */
 
-export function FollowCard({ car, cars, quali, rivalId, onSwap, onRival }: { car: LiveCar; cars: LiveCar[]; quali: boolean; rivalId: string | null; onSwap: () => void; onRival: (id: string | null) => void }) {
+/** Followed driver: one quiet row. Tapping it opens the driver picker (and the rival option). */
+export function FollowCard({ car, cars, quali, onOpen }: { car: LiveCar; cars: LiveCar[]; quali: boolean; onOpen: () => void }) {
   const d = DRIVER_BY_ID[car.id]!;
   const team = TEAM_BY_ID[d.teamId]!;
   const ahead = cars.find((c) => c.position === car.position - 1) ?? null;
-  const behind = cars.find((c) => c.position === car.position + 1) ?? null;
-  const rivalCandidate = ahead ?? behind;
-  const rival = rivalId ? cars.find((c) => c.id === rivalId) ?? null : null;
+  const state = car.status !== 'ACTIVE' ? t(`status.${car.status}`) : car.occupancy !== 'ON_TRACK' ? t(`occ.${car.occupancy}`) : `S${car.sector}`;
+  const value = quali ? fmtLap(car.segmentBestMs ?? null) : car.position === 1 ? t('lv.leader') : car.intervalMs !== null ? fmtGap(car.intervalMs, 1) : '—';
+  const valueSub = quali ? t('live.bestLap') : car.position === 1 ? `${t('lv.lapShort')} ${car.driverLaps + 1}` : ahead ? `→ ${DRIVER_BY_ID[ahead.id]?.code}` : '';
   return (
-    <div className="fc" style={{ ['--team' as string]: team.color }}>
-      <span className="fc__stripe" />
-      <DriverAvatar id={car.id} size={40} ring />
-      <div className="fc__who">
-        <div className="fc__name">
+    <button type="button" className="fc" style={{ ['--team' as string]: team.color }} onClick={onOpen} aria-label={`${t('live.changeDriver')}: P${car.position} ${d.lastName}`}>
+      <span className="fc__tick" aria-hidden="true" />
+      <span className="fc__who">
+        <span className="fc__name">
           <span className="fc__pos num">P{car.position}</span>
           <b className="ellipsis">{d.lastName}</b>
-        </div>
-        <div className="fc__team ellipsis">
-          {team.shortName}
-          {car.status !== 'ACTIVE' ? ` · ${t(`status.${car.status}`)}` : car.occupancy !== 'ON_TRACK' ? ` · ${t(`occ.${car.occupancy}`)}` : ` · S${car.sector}`}
-        </div>
-      </div>
-      <div className="fc__stats">
-        <span className="fc__stat fc__stat--speed">
-          <b className="num">{car.speedKph}</b>
-          <small>km/h</small>
         </span>
-        {!quali && (
-          <span className="fc__stat fc__stat--tyre">
-            <TyreBadge compound={car.tyre} size={18} />
-            <small className="num">{car.tyreAgeLaps}L</small>
+        <span className="fc__team">
+          <span className="ellipsis">
+            {team.shortName} · {state}
           </span>
-        )}
-        <span className="fc__stat">
-          <b className="num">{quali ? fmtLap(car.segmentBestMs ?? null) : car.position === 1 ? t('lv.leader') : car.intervalMs !== null ? fmtGap(car.intervalMs, 1) : '—'}</b>
-          <small>{quali ? t('live.bestLap') : car.position === 1 ? `L${car.driverLaps + 1}` : ahead ? `→ ${DRIVER_BY_ID[ahead.id]?.code}` : t('live.interval')}</small>
+          {!quali && (
+            <span className="fc__tyre num">
+              <TyreBadge compound={car.tyre} size={14} />
+              {t('home2.laps', { n: car.tyreAgeLaps })}
+            </span>
+          )}
         </span>
-      </div>
-      <div className="fc__btns">
-        {rivalCandidate && (
-          <button
-            type="button"
-            className={`fc__btn ${rival ? 'fc__btn--on' : ''}`}
-            aria-pressed={!!rival}
-            aria-label={rival ? `${t('pool.rivalTag')}: ${DRIVER_BY_ID[rival.id]?.code}` : `${t('pool.rivalTag')}: ${DRIVER_BY_ID[rivalCandidate.id]?.code}`}
-            onClick={() => {
-              haptic.impact('light');
-              onRival(rival ? null : rivalCandidate.id);
-            }}
-          >
-            <IcSwords size={16} />
-            <span className="num">{DRIVER_BY_ID[(rival ?? rivalCandidate).id]?.code}</span>
-          </button>
-        )}
-        <button type="button" className="fc__btn" aria-label={t('live.changeDriver')} onClick={onSwap}>
-          <IcSwapCar size={16} />
-        </button>
-      </div>
-    </div>
+      </span>
+      <span className="fc__val">
+        <b className="num">{value}</b>
+        {valueSub && <small className="num">{valueSub}</small>}
+      </span>
+      <span className="fc__swap" aria-hidden="true">
+        <IcSwapCar size={16} />
+      </span>
+    </button>
   );
 }
 
@@ -394,11 +321,11 @@ export function TimingTable({ cars, quali, followId, onPick }: { cars: LiveCar[]
         {quali ? (
           <span>{t('live.bestLap')}</span>
         ) : (
-          <button type="button" className="tt__sort" onClick={() => (haptic.tap(), setInterval_(!interval))}>
-            {interval ? t('live.interval') : t('live.gap')} <IcSwapCar size={11} />
+          <button type="button" className="tt__sort" aria-label={interval ? t('live.interval') : t('live.gap')} onClick={() => (haptic.tap(), setInterval_(!interval))}>
+            {interval ? t('tt.int') : t('tt.gap')} <IcSwapCar size={11} />
           </button>
         )}
-        <span>{t('live.lastLap')}</span>
+        <span>{t('tt.last')}</span>
         <span>{quali ? '' : t('live.tyre')}</span>
       </div>
       {cars.map((c) => {
@@ -539,6 +466,10 @@ export function Charts() {
   const shown = ids.filter((id) => !hidden.has(id));
   const fill = (arr: Array<number | null> | undefined) => Array.from({ length: arr?.length ?? 0 }, (_, i) => arr?.[i] ?? null);
   const cut = <T,>(arr: T[]) => (zoom ? arr.slice(-10) : arr);
+  // First lap number shown on the x axis once the window is cut to the last 10.
+  const n = (m: Map<string, unknown[]>) => Math.max(0, ...shown.map((id) => m.get(id)?.length ?? 0));
+  const first = (len: number) => (zoom ? Math.max(1, len - 9) : 1);
+  const line = <T extends number | null>(id: string, values: T[]) => ({ id, color: teamColor(id), values: cut(values), label: DRIVER_BY_ID[id]?.code, emphasis: id === followId });
   const best = (arr: number[]) => (arr.length ? Math.min(...arr) : null);
   const bestSector = [0, 1, 2].map((i) => Math.min(...[...data.sectors.values()].map((s) => best(s[i]) ?? Infinity)));
   const kinds: Array<{ id: ChartKind; label: string }> = [
@@ -549,24 +480,25 @@ export function Charts() {
   ];
   return (
     <div className="ch">
-      <div className="ch__bar">
-        <div className="ch__kinds" role="tablist" aria-label={t('live.graphs')}>
-          {kinds.map((k) => (
-            <button key={k.id} type="button" role="tab" aria-selected={kind === k.id} className={`ch__kind ${kind === k.id ? 'ch__kind--on' : ''}`} onClick={() => (haptic.tap(), setKind(k.id))}>
-              {k.label}
-            </button>
-          ))}
-        </div>
+      <div className="ch__kinds" role="tablist" aria-label={t('live.graphs')}>
+        {kinds.map((k) => (
+          <button key={k.id} type="button" role="tab" aria-selected={kind === k.id} className={`ch__kind ${kind === k.id ? 'ch__kind--on' : ''}`} onClick={() => (haptic.tap(), setKind(k.id))}>
+            {k.label}
+          </button>
+        ))}
+      </div>
+      <div className="ch__head">
+        <span className="ch__title">{t(`lv.chart.${kind}.title`)}</span>
         {kind !== 'sectors' && (
-          <button type="button" className={`ch__zoom ${zoom ? 'ch__zoom--on' : ''}`} aria-pressed={zoom} onClick={() => (haptic.tap(), setZoom(!zoom))}>
+          <button type="button" className="ch__zoom" aria-pressed={zoom} onClick={() => (haptic.tap(), setZoom(!zoom))}>
             {zoom ? t('lv.chart.all') : t('lv.chart.last10')}
           </button>
         )}
       </div>
       <div className="ch__card">
-        {kind === 'gap' && <LineChart invert series={shown.map((id) => ({ id, color: teamColor(id), values: cut(fill(data.gaps.get(id))) }))} yFormat={(v) => `+${v.toFixed(0)}s`} xLabel={t('live.lap')} height={170} />}
-        {kind === 'pos' && <LineChart invert series={shown.map((id) => ({ id, color: teamColor(id), values: cut(fill(data.positions.get(id))) }))} yFormat={(v) => `P${Math.round(v)}`} xLabel={t('live.lap')} height={170} />}
-        {kind === 'laps' && <LineChart series={shown.map((id) => ({ id, color: teamColor(id), values: cut(data.laps.get(id) ?? []) }))} yFormat={(v) => v.toFixed(1)} xLabel={t('live.lap')} height={170} />}
+        {kind === 'gap' && <LineChart invert series={shown.map((id) => line(id, fill(data.gaps.get(id))))} xStart={first(n(data.gaps))} yFormat={(v) => (v < 0.05 ? '0' : `+${v.toFixed(0)}s`)} xLabel={t('lv.lapShort')} height={180} />}
+        {kind === 'pos' && <LineChart invert series={shown.map((id) => line(id, fill(data.positions.get(id))))} xStart={first(n(data.positions))} yFormat={(v) => `P${Math.round(v)}`} xLabel={t('lv.lapShort')} height={180} />}
+        {kind === 'laps' && <LineChart series={shown.map((id) => line(id, data.laps.get(id) ?? []))} xStart={first(Math.max(0, ...shown.map((id) => data.laps.get(id)?.length ?? 0)))} yFormat={(v) => v.toFixed(1)} xLabel={t('lv.lapShort')} height={180} />}
         {kind === 'sectors' && (
           <div className="heat">
             <div className="heat__row heat__row--head">
@@ -586,9 +518,8 @@ export function Charts() {
                   {[0, 1, 2].map((i) => {
                     const b = s ? best(s[i]) : null;
                     const delta = b !== null && Number.isFinite(bestSector[i]!) ? b - bestSector[i]! : null;
-                    const k = delta === null ? 0 : Math.max(0, 1 - delta / 600);
                     return (
-                      <span key={i} className={`heat__cell num ${delta === 0 ? 'heat__cell--best' : ''}`} style={{ background: delta === null ? 'rgba(255,255,255,.04)' : delta === 0 ? 'rgba(178,107,255,.55)' : `rgba(198,255,61,${0.08 + k * 0.42})` }}>
+                      <span key={i} className={`heat__cell num ${delta === 0 ? 'heat__cell--best' : ''}`}>
                         {delta === null ? '—' : delta === 0 ? fmtSec(b!) : `+${fmtSec(delta)}`}
                       </span>
                     );

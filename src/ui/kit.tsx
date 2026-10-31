@@ -442,7 +442,7 @@ export function Sparkline({ values, color = 'var(--cyan)', height = 36, width = 
           <path d={`${d}L${width} ${height}L0 ${height}Z`} fill={`url(#${gid})`} />
         </>
       )}
-      <path d={d} stroke={color} strokeWidth="1.8" fill="none" style={{ filter: `drop-shadow(0 0 4px ${color})` }} />
+      <path d={d} stroke={color} strokeWidth="1.8" fill="none" />
     </svg>
   );
 }
@@ -451,49 +451,117 @@ export interface Series {
   id: string;
   color: string;
   values: Array<number | null>;
+  /** Short name drawn at the end of the line; series must not rely on colour alone. */
   label?: string;
+  /** The followed driver: drawn on top at full strength while the rest recede. */
+  emphasis?: boolean;
 }
 
-/** Multi-series line chart with optional y inversion (positions). */
-export function LineChart({ series, height = 150, invert = false, yLabel, xLabel, yFormat = (v: number) => String(v) }: { series: Series[]; height?: number; invert?: boolean; yLabel?: string; xLabel?: string; yFormat?: (v: number) => string }) {
-  const width = 320;
-  const pad = { l: 34, r: 8, t: 8, b: 18 };
+function useWidth<T extends HTMLElement>(fallback: number) {
+  const ref = useRef<T>(null);
+  const [w, setW] = useState(fallback);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const apply = () => setW(Math.max(160, Math.round(el.clientWidth)));
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, w] as const;
+}
+
+/**
+ * Multi-series line chart with optional y inversion (positions, gaps). Rendered at the
+ * container's real pixel width so labels stay legible; every line ends in a direct label.
+ */
+export function LineChart({
+  series,
+  height = 150,
+  invert = false,
+  yLabel,
+  xLabel,
+  xStart = 1,
+  yFormat = (v: number) => String(v),
+}: {
+  series: Series[];
+  height?: number;
+  invert?: boolean;
+  yLabel?: string;
+  xLabel?: string;
+  /** Number shown for the first x index (e.g. the first lap in a zoomed window). */
+  xStart?: number;
+  yFormat?: (v: number) => string;
+}) {
+  const [ref, width] = useWidth<HTMLDivElement>(320);
   const all = series.flatMap((s) => s.values.filter((v): v is number => v !== null));
   if (!all.length) return <div className="empty">{t('chart.nodata')}</div>;
+  const labelled = series.some((s) => s.label);
+  const pad = { l: 34, r: labelled ? 40 : 10, t: 10, b: 22 };
   const min = Math.min(...all);
   const max = Math.max(...all);
   const span = max - min || 1;
   const n = Math.max(...series.map((s) => s.values.length));
   const x = (i: number) => pad.l + (i / Math.max(1, n - 1)) * (width - pad.l - pad.r);
-  const y = (v: number) => {
-    const f = (v - min) / span;
-    return pad.t + (invert ? f : 1 - f) * (height - pad.t - pad.b);
-  };
-  const ticks = [0, 0.5, 1].map((f) => min + f * span);
+  const y = (v: number) => pad.t + (invert ? (v - min) / span : 1 - (v - min) / span) * (height - pad.t - pad.b);
+  const yTicks = [0, 0.5, 1].map((f) => min + f * span);
+  const xTicks = n > 2 ? [0, Math.round((n - 1) / 2), n - 1] : [0, n - 1];
+  const hasEmphasis = series.some((s) => s.emphasis);
+  const ordered = [...series].sort((a, b) => Number(!!a.emphasis) - Number(!!b.emphasis));
+
+  // End labels: last real point per series, nudged apart so codes never overlap.
+  const ends = series
+    .map((s) => {
+      let i = s.values.length - 1;
+      while (i >= 0 && s.values[i] === null) i--;
+      return i < 0 ? null : { s, i, y: y(s.values[i]!) };
+    })
+    .filter((e): e is { s: Series; i: number; y: number } => e !== null)
+    .sort((a, b) => a.y - b.y);
+  const gap = 11;
+  const ly = ends.map((e) => e.y);
+  for (let k = 1; k < ly.length; k++) ly[k] = Math.max(ly[k]!, ly[k - 1]! + gap);
+  const overflow = (ly[ly.length - 1] ?? 0) - (height - pad.b);
+  if (overflow > 0) for (let k = ly.length - 1; k >= 0; k--) ly[k] = Math.min(ly[k]!, (k === ly.length - 1 ? height - pad.b : ly[k + 1]! - gap));
+
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height} role="img" aria-label={yLabel}>
-      {ticks.map((tv, i) => (
-        <g key={i}>
-          <line x1={pad.l} x2={width - pad.r} y1={y(tv)} y2={y(tv)} stroke="rgba(255,255,255,0.07)" />
-          <text x={pad.l - 5} y={y(tv) + 3} fontSize="8.5" textAnchor="end" fill="var(--muted)" fontFamily="Chakra Petch">
-            {yFormat(tv)}
+    <div ref={ref} className="lc">
+      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} role="img" aria-label={yLabel}>
+        {yTicks.map((tv, i) => (
+          <g key={i}>
+            <line x1={pad.l} x2={width - pad.r + 4} y1={y(tv)} y2={y(tv)} className="lc__grid" />
+            <text x={pad.l - 6} y={y(tv) + 3.5} textAnchor="end" className="lc__tick">
+              {yFormat(tv)}
+            </text>
+          </g>
+        ))}
+        {xTicks.map((i, k) => (
+          <text key={i} x={x(i)} y={height - 6} textAnchor={k === 0 ? 'start' : k === xTicks.length - 1 ? 'end' : 'middle'} className="lc__tick">
+            {k === xTicks.length - 1 && xLabel ? `${xLabel} ${xStart + i}` : xStart + i}
           </text>
-        </g>
-      ))}
-      {series.map((s) => {
-        let d = '';
-        s.values.forEach((v, i) => {
-          if (v === null) return;
-          d += `${d && s.values[i - 1] !== null ? 'L' : 'M'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`;
-        });
-        return <path key={s.id} d={d} stroke={s.color} strokeWidth="1.8" fill="none" strokeLinejoin="round" style={{ filter: `drop-shadow(0 0 3px ${s.color})` }} />;
-      })}
-      {xLabel && (
-        <text x={width - pad.r} y={height - 3} fontSize="8.5" textAnchor="end" fill="var(--muted)">
-          {xLabel}
-        </text>
-      )}
-    </svg>
+        ))}
+        {ordered.map((s) => {
+          let d = '';
+          s.values.forEach((v, i) => {
+            if (v === null) return;
+            d += `${d && s.values[i - 1] !== null ? 'L' : 'M'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`;
+          });
+          const dim = hasEmphasis && !s.emphasis;
+          return <path key={s.id} d={d} stroke={s.color} strokeWidth={s.emphasis ? 2.5 : 1.5} strokeOpacity={dim ? 0.55 : 1} fill="none" strokeLinejoin="round" strokeLinecap="round" />;
+        })}
+        {ends.map((e, k) => (
+          <g key={e.s.id} opacity={hasEmphasis && !e.s.emphasis ? 0.75 : 1}>
+            <circle cx={x(e.i)} cy={e.y} r={e.s.emphasis ? 3 : 2.2} fill={e.s.color} />
+            {e.s.label && (
+              <text x={width - pad.r + 8} y={ly[k]! + 3.5} className={`lc__label ${e.s.emphasis ? 'lc__label--on' : ''}`}>
+                {e.s.label}
+              </text>
+            )}
+          </g>
+        ))}
+      </svg>
+    </div>
   );
 }
 

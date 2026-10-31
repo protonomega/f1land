@@ -13,7 +13,6 @@ import type { MarketId } from '@/domain/types';
 import { useWallet } from '@/store/wallet';
 import { useLive, startLiveLoop } from '@/store/live';
 import { useNav, currentRoute, type Route } from '@/store/nav';
-import { usePools } from '@/demo/poolEngine';
 import { useSettings } from '@/store/settings';
 import { useToasts } from '@/store/toasts';
 import { NavBar } from '@/ui/NavBar';
@@ -73,6 +72,10 @@ registerDict('ru', { ...UI_DICTS.ru, ...F1_I18N.ru });
 registerDict('en', { ...UI_DICTS.en, ...F1_I18N.en });
 registerFeatureDicts();
 setLang(useSettings.getState().lang);
+// Zustand notifies synchronously inside set(), so t() already speaks the new language when React re-renders.
+useSettings.subscribe((s, prev) => {
+  if (s.lang !== prev.lang) setLang(s.lang);
+});
 initTelegram();
 startSessionService();
 startLiveLoop();
@@ -137,20 +140,21 @@ function App() {
   const stack = useNav((s) => s.stack);
   const back = useNav((s) => s.back);
   const route = currentRoute({ tab, stack });
-  const openCount = usePools((s) => s.pools.filter((p) => p.pool.status === 'OPEN').length);
   const toasts = useToasts((s) => s.items);
   const dismiss = useToasts((s) => s.dismiss);
   const error = useLive((s) => s.error);
   const open = useLive((s) => s.open);
   const channelId = useLive((s) => s.channelId);
-  const lang = useSettings((s) => s.lang);
-  useEffect(() => { setLang(lang); }, [lang]);
+  // Subscribed only so a language switch re-renders the whole tree.
+  useSettings((s) => s.lang);
   useApplySettings();
   useEffect(() => { setBackButton(stack.length ? back : null); return () => setBackButton(null); }, [stack.length, back]);
   const live = route.name === 'tab' && route.tab === 'live';
+  // The pool flow is a focused task with its own bottom CTA; the tab bar steps aside.
+  const navHidden = route.name === 'pool';
   const content = routeContent(route);
   return (
-    <div className="app">
+    <div className="app" data-nav={navHidden ? 'hidden' : undefined}>
       <div className="app__bg-lines" />
       <SceneHost />
       <div className="screen-stack">
@@ -163,7 +167,7 @@ function App() {
           <Suspense fallback={<ScreenFallback />}>{content}</Suspense>
         </main>
       </div>
-      <NavBar openCount={openCount} />
+      <NavBar hidden={navHidden} />
       <div className="toast-wrap" aria-live="polite">
         {toasts.map((item) => (
           <div className={`toast toast--${item.kind}`} key={item.id}>

@@ -242,8 +242,6 @@ export class RaceScene {
     this.rig.setTrack(model.track, circuit.widthM / 2, circuit.bounds);
     this.rig.setGrid(model.gridS(0));
     this.rig.setCars(this.carPositions);
-    this.rig.onShot = (shot) => this.labels.setShot(shot);
-    this.labels.setShot(this.rig.currentShot);
     this.placeOnGrid();
     this.setupPost();
     onProgress?.(1);

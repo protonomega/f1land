@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { motion } from 'motion/react';
 import { useWallet, levelFromXp } from '@/store/wallet';
 import { useSettings } from '@/store/settings';
 import { useNav } from '@/store/nav';
@@ -9,40 +8,16 @@ import { achievements, missions, playerStats, type AchievementState } from '@/de
 import { leaderboardWithYou, userPoints } from '@/demo/leaderboard';
 import { Header } from '@/app/Header';
 import { Card, DriverAvatar, Sparkline } from '@/ui/kit';
-import { IconCheck, IconChevron, IconGift, IconHistory, IconLock, IconSettings, IconStar, IconTrophy, IconWallet } from '@/ui/icons';
+import { IconArrow, IconCheck, IconChevron, IconGift, IconHistory, IconLock, IconSettings, IconStar, IconTicket, IconTrophy, IconWallet } from '@/ui/icons';
 import { fmtNumber, t } from '@/i18n/core';
 import { telegramUser, haptic } from '@/telegram/sdk';
 import { sfx } from '@/audio/sfx';
-import { AchGlyph, Bar, MenuRow, PortalSheet, Reveal, signed, useReduced } from './common';
+import { AchGlyph, Bar, MenuRow, PortalSheet, Reveal, signed } from './common';
 
 export function useYou() {
   const user = telegramUser();
   const fav = useSettings((s) => s.favoriteDriver);
   return { id: 'you', name: user?.name || t('profile.guest'), username: user?.username, photo: user?.photo, premium: user?.premium, driverId: fav ?? 'nor', countryCode: '', winRate: 0 };
-}
-
-function LevelRing({ value, size = 92, children }: { value: number; size?: number; children: React.ReactNode }) {
-  const reduced = useReduced();
-  const r = size / 2 - 4;
-  const c = 2 * Math.PI * r;
-  return (
-    <div className="sc-ring" style={{ width: size, height: size }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
-        <circle cx={size / 2} cy={size / 2} r={r} className="sc-ring__bg" />
-        <motion.circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          className="sc-ring__fg"
-          strokeDasharray={c}
-          initial={{ strokeDashoffset: reduced ? c * (1 - value) : c }}
-          animate={{ strokeDashoffset: c * (1 - value) }}
-          transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
-        />
-      </svg>
-      <div className="sc-ring__in">{children}</div>
-    </div>
-  );
 }
 
 export function AchievementsGrid({ list, onOpen }: { list: AchievementState[]; onOpen: (a: AchievementState) => void }) {
@@ -53,14 +28,9 @@ export function AchievementsGrid({ list, onOpen }: { list: AchievementState[]; o
           <button className="sc-ach" data-on={a.unlocked || undefined} data-tone={a.def.tone} onClick={() => onOpen(a)} aria-label={`${t(`scr.ach.${a.def.id}`)}${a.unlocked ? '' : ` — ${t('scr.locked')}`}`}>
             <span className="sc-ach__ic">
               <AchGlyph icon={a.def.icon} size={22} />
-              {!a.unlocked && (
-                <span className="sc-ach__lock">
-                  <IconLock size={10} />
-                </span>
-              )}
             </span>
             <span className="sc-ach__t">{t(`scr.ach.${a.def.id}`)}</span>
-            {!a.unlocked && (
+            {!a.unlocked && a.progress > 0 && (
               <span className="sc-ach__p">
                 <i style={{ width: `${Math.round(a.progress * 100)}%` }} />
               </span>
@@ -158,87 +128,121 @@ export function ProfileScreen() {
   const claimable = missions(entries, lastDaily, now).filter((m) => m.done && !claimed[m.claimKey]).length;
   const favD = fav ? DRIVER_BY_ID[fav] : undefined;
   const favTeam = favD ? TEAM_BY_ID[favD.teamId] : undefined;
+  const go = useNav((s) => s.go);
+  // The closest locked achievement leads; the strip shows the rest, unlocked first.
+  const next = useMemo(() => achList.filter((a) => !a.unlocked).sort((x, y) => y.progress - x.progress)[0] ?? null, [achList]);
+  const rest = useMemo(() => achList.filter((a) => a !== next).sort((x, y) => Number(y.unlocked) - Number(x.unlocked) || y.progress - x.progress), [achList, next]);
   const profitTone = stats.profit > 0 ? 'lime' : stats.profit < 0 ? 'red' : '';
   let i = 0;
   return (
     <>
       <Header />
       <Reveal i={i++}>
-        <Card glow pad={false} className="sc-phero">
-          <div className="sc-phero__glow" aria-hidden="true" />
-          <div className="sc-phero__row">
-            <LevelRing value={lvl.into / lvl.need}>{you.photo ? <img src={you.photo} alt="" className="sc-phero__img" /> : <DriverAvatar id={you.driverId} size={70} />}</LevelRing>
-            <div className="sc-phero__txt">
-              <div className="sc-phero__name">
+        <section className="pf-hero" style={favTeam ? { ['--team' as string]: favTeam.color } : undefined} data-fav={favD ? '' : undefined}>
+          {favD && (
+            <span className="pf-hero__num num" aria-hidden="true">
+              {favD.number}
+            </span>
+          )}
+          <div className="pf-hero__top">
+            <button
+              type="button"
+              className="pf-hero__av"
+              aria-label={t('profile.favorite')}
+              onClick={() => {
+                haptic.tap();
+                setPickOpen(true);
+              }}
+            >
+              {you.photo ? <img src={you.photo} alt="" /> : <DriverAvatar id={you.driverId} size={64} />}
+            </button>
+            <div className="pf-hero__who">
+              <h1 className="pf-hero__name">
                 <span className="ellipsis">{you.name}</span>
-                {you.premium && <IconStar size={14} className="icon yellow" />}
-              </div>
-              <div className="sc-phero__user muted ellipsis">{you.username ? `@${you.username}` : t('scr.profile.demoAccount')}</div>
-              <div className="sc-phero__badges">
-                <span className="sc-lvl">
-                  <span>LVL</span>
-                  <b className="num">{lvl.level}</b>
-                </span>
-                <span className="sc-phero__rank num">
-                  <IconTrophy size={12} /> #{rank}
-                </span>
-              </div>
+                {you.premium && <IconStar size={15} className="icon yellow" />}
+              </h1>
+              <button
+                type="button"
+                className="pf-hero__fan"
+                onClick={() => {
+                  haptic.tap();
+                  setPickOpen(true);
+                }}
+              >
+                {favD ? (
+                  <span>
+                    {favD.lastName} <span className="muted">· {favTeam?.shortName}</span>
+                  </span>
+                ) : (
+                  <span className="lime">{t('pf.pickDriver')}</span>
+                )}
+                <IconChevron size={14} />
+              </button>
             </div>
           </div>
-          <div className="sc-phero__xp">
+          <div className="pf-hero__lvl">
+            <div className="pf-hero__lvlrow">
+              <b>{t('profile.level', { n: lvl.level })}</b>
+              <button type="button" className="pf-hero__rank num" onClick={() => push({ name: 'leaderboard' })}>
+                <IconTrophy size={13} />
+                {t('pf.rank', { n: rank })}
+              </button>
+            </div>
             <Bar value={lvl.into} max={lvl.need} label={t('profile.level', { n: lvl.level })} />
-            <div className="sc-phero__xpt">
-              <span>{t('profile.xp', { n: fmtNumber(lvl.need - lvl.into) })}</span>
+            <div className="pf-hero__xp">
+              <span>{t('pf.toLevel', { n: fmtNumber(lvl.need - lvl.into), l: lvl.level + 1 })}</span>
               <span className="num">
-                {fmtNumber(lvl.into)} / {fmtNumber(lvl.need)} XP
+                {fmtNumber(lvl.into)}/{fmtNumber(lvl.need)}
               </span>
             </div>
           </div>
-        </Card>
+        </section>
       </Reveal>
 
       <Reveal i={i++} className="section">
         <div className="section__head">
           <h2 className="section__title">{t('profile.stats')}</h2>
-          <span className="sc-note">DEMO</span>
         </div>
-        <div className="sc-statgrid">
-          <div className="sc-stat">
-            <span className="sc-stat__v num">{stats.total}</span>
-            <span className="sc-stat__k">{t('profile.entries')}</span>
-          </div>
-          <div className="sc-stat">
-            <span className="sc-stat__v num cyan">{stats.winRate === null ? '—' : `${Math.round(stats.winRate * 100)}%`}</span>
-            <span className="sc-stat__k">{t('profile.winRate')}</span>
-          </div>
-          <div className="sc-stat">
-            <span className={`sc-stat__v num ${profitTone}`}>{signed(stats.profit, (n) => fmtNumber(n))}</span>
-            <span className="sc-stat__k">{t('profile.profit')}</span>
-          </div>
-          <div className="sc-stat">
-            <span className="sc-stat__v num">
-              {stats.streak}
-              {stats.streak >= 2 && <i className="sc-fire">🔥</i>}
+        {stats.total === 0 ? (
+          <div className="pf-first">
+            <span className="pf-first__ic">
+              <IconTicket size={22} />
             </span>
-            <span className="sc-stat__k">{t('profile.streak')}</span>
+            <span className="pf-first__txt">
+              <b>{t('pf.first.title')}</b>
+              <small>{t('pf.first.sub')}</small>
+            </span>
+            <button type="button" className="btn btn--primary" onClick={() => (haptic.tap(), go('live'))}>
+              {t('pf.first.cta')}
+              <IconArrow size={16} />
+            </button>
           </div>
-          <div className="sc-stat">
-            <span className="sc-stat__v num lime">{stats.bestWin ? `+${fmtNumber(stats.bestWin)}` : '—'}</span>
-            <span className="sc-stat__k">{t('profile.best')}</span>
-          </div>
-          <div className="sc-stat">
-            <span className="sc-stat__v num">{stats.pending}</span>
-            <span className="sc-stat__k">{t('scr.profile.inPlay')}</span>
-          </div>
-        </div>
-        {stats.profitSeries.length > 2 && (
-          <Card className="sc-spark">
-            <div>
-              <div className="sc-spark__k">{t('scr.profile.profitCurve')}</div>
-              <div className={`sc-spark__v num ${profitTone}`}>{signed(stats.profit, (n) => fmtNumber(n))} PULSE</div>
+        ) : (
+          <>
+            <div className="sc-statgrid">
+              <div className="sc-stat">
+                <span className="sc-stat__v num">{stats.total}</span>
+                <span className="sc-stat__k">{t('profile.entries')}</span>
+              </div>
+              <div className="sc-stat">
+                <span className="sc-stat__v num">{stats.winRate === null ? '—' : `${Math.round(stats.winRate * 100)}%`}</span>
+                <span className="sc-stat__k">{t('profile.winRate')}</span>
+              </div>
+              <div className="sc-stat">
+                <span className={`sc-stat__v num ${profitTone}`}>{signed(stats.profit, (n) => fmtNumber(n))}</span>
+                <span className="sc-stat__k">{t('profile.profit')}</span>
+              </div>
             </div>
-            <Sparkline values={stats.profitSeries} color={stats.profit >= 0 ? 'var(--lime)' : 'var(--red)'} width={130} height={42} />
-          </Card>
+            {stats.profitSeries.length > 2 && (
+              <Card className="sc-spark">
+                <div>
+                  <div className="sc-spark__k">{t('scr.profile.profitCurve')}</div>
+                  <div className={`sc-spark__v num ${profitTone}`}>{signed(stats.profit, (n) => fmtNumber(n))} PULSE</div>
+                </div>
+                <Sparkline values={stats.profitSeries} color={stats.profit >= 0 ? 'var(--lime)' : 'var(--red)'} width={130} height={42} />
+              </Card>
+            )}
+          </>
         )}
       </Reveal>
 
@@ -249,66 +253,39 @@ export function ProfileScreen() {
             {unlocked}/{achList.length}
           </span>
         </div>
-        <AchievementsGrid list={achList} onOpen={setAch} />
-      </Reveal>
-
-      <Reveal i={i++} className="section">
-        <div className="section__head">
-          <h2 className="section__title">{t('profile.favorite')}</h2>
-        </div>
-        <Card className="sc-fav" pad={false}>
-          <div className="sc-fav__row" style={favTeam ? { ['--team' as string]: favTeam.color } : undefined}>
-            <button
-              className="sc-fav__main"
-              aria-label={`${t('profile.favorite')}: ${favD ? `${favD.firstName} ${favD.lastName}` : t('scr.profile.pickFav')}`}
-              onClick={() => {
-                haptic.tap();
-                setPickOpen(true);
-              }}
-            >
-              {favD ? (
-                <DriverAvatar id={favD.id} size={48} ring />
-              ) : (
-                <span className="sc-fav__empty">
-                  <IconStar size={22} />
-                </span>
-              )}
-              <span className="sc-fav__txt">
-                <b className="ellipsis">{favD ? `${favD.firstName} ${favD.lastName}` : t('scr.profile.pickFav')}</b>
-                <span className="muted">{favD ? `${favTeam?.name} · #${favD.number}` : t('scr.profile.favHint')}</span>
+        {next && (
+          <button type="button" className="pf-next" data-tone={next.def.tone} onClick={() => setAch(next)}>
+            <span className="pf-next__ic">
+              <AchGlyph icon={next.def.icon} size={24} />
+            </span>
+            <span className="pf-next__body">
+              <b>{t(`scr.ach.${next.def.id}`)}</b>
+              <small>{t(`scr.ach.${next.def.id}.d`, { n: next.def.goal })}</small>
+              <span className="pf-next__bar" aria-hidden="true">
+                <i style={{ width: `${Math.max(4, Math.round(next.progress * 100))}%` }} />
               </span>
-              {!favD && <IconChevron size={16} />}
-            </button>
-            {favD && (
-              <button
-                className="sc-fav__open"
-                onClick={() => {
-                  haptic.tap();
-                  push({ name: 'driver', driverId: favD.id });
-                }}
-              >
-                {t('scr.profile.card')}
-                <IconChevron size={14} />
-              </button>
-            )}
-          </div>
-        </Card>
+            </span>
+            <span className="pf-next__v num">
+              {fmtNumber(Math.min(next.value, next.def.goal))}/{fmtNumber(next.def.goal)}
+            </span>
+          </button>
+        )}
+        <AchievementsGrid list={rest} onOpen={setAch} />
       </Reveal>
 
       <Reveal i={i++} className="section">
         <div className="sc-menu-list">
           <MenuRow icon={<IconWallet size={20} />} title={t('profile.wallet')} sub={t('wallet.sub')} value={fmtNumber(balance)} onClick={() => push({ name: 'wallet' })} />
-          <MenuRow icon={<IconHistory size={20} />} tone="cyan" title={t('profile.history')} sub={t('scr.profile.historySub')} value={stats.total} onClick={() => push({ name: 'history' })} />
-          <MenuRow icon={<IconTrophy size={20} />} tone="yellow" title={t('profile.leaderboard')} sub={t('lb.sub')} value={`#${rank}`} onClick={() => push({ name: 'leaderboard' })} />
+          <MenuRow icon={<IconHistory size={20} />} title={t('profile.history')} sub={t('scr.profile.historySub')} value={stats.total} onClick={() => push({ name: 'history' })} />
+          <MenuRow icon={<IconTrophy size={20} />} title={t('profile.leaderboard')} sub={t('lb.sub')} value={`#${rank}`} onClick={() => push({ name: 'leaderboard' })} />
           <MenuRow
             icon={<IconGift size={20} />}
-            tone="purple"
             title={t('profile.rewards')}
             sub={t('rewards.sub')}
             badge={claimable > 0 ? <span className="sc-dotbadge num">{claimable}</span> : undefined}
             onClick={() => push({ name: 'rewards' })}
           />
-          <MenuRow icon={<IconSettings size={20} />} tone="orange" title={t('profile.settings')} sub={t('scr.profile.settingsSub')} onClick={() => push({ name: 'settings' })} />
+          <MenuRow icon={<IconSettings size={20} />} title={t('profile.settings')} sub={t('scr.profile.settingsSub')} onClick={() => push({ name: 'settings' })} />
         </div>
         <p className="sc-fine">{t('app.demoNote')}</p>
       </Reveal>

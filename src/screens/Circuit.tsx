@@ -278,13 +278,13 @@ function CircuitBody({ circuitId }: { circuitId: string }) {
           {meeting && (
             <button className="btn btn--ghost" onClick={() => push({ name: 'meeting', meetingId: meeting.id })}>
               <IconCalendar size={16} />
-              {t('scr.races.weekend')}
+              <span className="ellipsis">{t('scr.races.weekend')}</span>
             </button>
           )}
           {ch && (
             <button className="btn btn--primary" onClick={() => watchChannel(ch)}>
               <IconPlay size={16} />
-              {t('races.watchDemo')}
+              <span className="ellipsis">{t('races.watchDemo')}</span>
             </button>
           )}
         </div>

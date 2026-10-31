@@ -6,7 +6,7 @@
 .scene-host { position: absolute; z-index: 0; inset: 0; overflow: hidden; background: #070b0d; }
 .scene-host--hidden { display: none; }
 /* Live: the viewport ends just under the peek sheet (Live sets --lv-scene-cut) so the camera centre stays visible. */
-.scene-host--full { bottom: calc(var(--nav-h) + var(--safe-bottom) + 8px + var(--lv-scene-cut, 0px)); }
+.scene-host--full { bottom: calc(var(--nav-top) + 8px + var(--lv-scene-cut, 0px)); }
 /* Pool: sits under the pool header; Pool.tsx translates it with the page scroll. */
 .scene-host--top { top: calc(var(--safe-top) + 58px); height: var(--pl-scene-h); bottom: auto; will-change: transform; }
 .scene-host--top::after { content: ''; position: absolute; inset: auto 0 0; height: 64px; pointer-events: none; background: linear-gradient(180deg, transparent, rgba(7, 9, 11, 0.92)); }

@@ -1,6 +1,5 @@
-@import '@fontsource/titillium-web/400.css';
-@import '@fontsource/titillium-web/600.css';
-@import '@fontsource/titillium-web/700.css';
+/* Onest covers Cyrillic; Titillium Web had Latin only, so RU copy fell back to the system face. */
+@import '@fontsource-variable/onest/index.css';
 @import '@fontsource/michroma/400.css';
 @import '@fontsource/chakra-petch/500.css';
 @import '@fontsource/chakra-petch/600.css';
@@ -32,17 +31,21 @@
   --hard: #f0f0ec;
   --inter: #43b02a;
   --wet: #0067ad;
-  --radius: 18px;
+  --radius: 16px;
   --radius-sm: 12px;
   --radius-xs: 9px;
-  --font: 'Titillium Web', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-display: 'Michroma', 'Titillium Web', sans-serif;
-  --font-num: 'Chakra Petch', 'Titillium Web', monospace;
+  --font: 'Onest Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Michroma', 'Onest Variable', sans-serif;
+  --font-num: 'Chakra Petch', 'Onest Variable', sans-serif;
   --tg-safe-top: 0px;
   --tg-safe-bottom: 0px;
   --safe-top: max(env(safe-area-inset-top, 0px), var(--tg-safe-top));
   --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-bottom));
-  --nav-h: 74px;
+  --nav-h: 70px;
+  /* Floating nav sits just above the home indicator rather than a full inset above it. */
+  --nav-gap: max(10px, calc(var(--safe-bottom) - 12px));
+  /* Distance from the viewport bottom to the nav's top edge; 0 + safe area when hidden. */
+  --nav-top: calc(var(--nav-gap) + var(--nav-h));
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   color-scheme: dark;
@@ -82,7 +85,6 @@ button {
   padding: 0;
   cursor: pointer;
 }
-
 button:focus-visible,
 [role='button']:focus-visible,
 a:focus-visible,
@@ -147,24 +149,25 @@ input {
 /* App shell                                                           */
 /* ------------------------------------------------------------------ */
 
+.app[data-nav='hidden'] {
+  --nav-top: var(--safe-bottom);
+}
 .app {
   position: fixed;
   inset: 0;
   display: flex;
   flex-direction: column;
-  background:
-    radial-gradient(120% 60% at 50% -10%, rgba(198, 255, 61, 0.07), transparent 60%),
-    radial-gradient(90% 50% at 100% 110%, rgba(47, 230, 255, 0.06), transparent 60%),
-    var(--bg);
+  background: var(--bg);
   overflow: hidden;
+  /* Unlike hidden, clip can't be scrolled by scrollIntoView/focus (the hidden nav overflows below). */
+  overflow: clip;
 }
 
 .app__bg-lines {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.35;
-  background-image: repeating-linear-gradient(115deg, transparent 0 22px, rgba(255, 255, 255, 0.012) 22px 23px);
+  display: none;
 }
 
 .screen-stack {
@@ -179,7 +182,7 @@ input {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  padding: calc(var(--safe-top) + 8px) 14px calc(var(--nav-h) + var(--safe-bottom) + 22px);
+  padding: calc(var(--safe-top) + 8px) 14px calc(var(--nav-top) + 18px);
   scrollbar-width: none;
 }
 
@@ -228,7 +231,6 @@ input {
   width: 36px;
   height: 28px;
   flex: none;
-  filter: drop-shadow(0 0 8px var(--lime-glow));
 }
 .brand__text {
   display: flex;
@@ -245,7 +247,6 @@ input {
 .brand__name b {
   color: var(--lime);
   font-weight: 400;
-  text-shadow: 0 0 14px rgba(198, 255, 61, 0.35);
 }
 .brand__sub {
   font-size: 9px;
@@ -279,13 +280,9 @@ input {
   align-items: center;
   gap: 6px;
   height: 40px;
-  padding: 0 5px 0 10px;
+  padding: 0 14px 0 12px;
   border-radius: 999px;
-  border: 1px solid rgba(198, 255, 61, 0.38);
-  background: linear-gradient(180deg, rgba(198, 255, 61, 0.12), rgba(198, 255, 61, 0.03));
-  box-shadow:
-    0 0 18px rgba(198, 255, 61, 0.1) inset,
-    0 0 22px -12px var(--lime-glow);
+  background: rgba(255, 255, 255, 0.06);
   font-family: var(--font-num);
   font-weight: 600;
   font-size: 15px;
@@ -297,43 +294,23 @@ input {
   transform: scale(0.95);
 }
 .balance-chip__mode {
-  position: absolute;
-  top: -7px;
-  left: 12px;
   font-family: var(--font);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 700;
-  line-height: 1;
-  letter-spacing: 0.16em;
-  color: #0b1200;
-  background: var(--lime);
-  border-radius: 4px;
-  padding: 2px 4px 1px 5px;
-  box-shadow: 0 0 10px var(--lime-glow);
+  letter-spacing: 0.08em;
+  color: var(--muted);
 }
 .balance-chip__coin.icon {
   width: 17px;
   height: 17px;
   color: var(--lime);
-  filter: drop-shadow(0 0 4px var(--lime-glow));
 }
 .balance-chip__val {
   display: inline-block;
   animation: bump 0.55s var(--ease-spring);
 }
 .balance-chip__plus {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: rgba(198, 255, 61, 0.14);
-  color: var(--lime);
-  border: 1px solid rgba(198, 255, 61, 0.3);
-}
-.balance-chip__plus .icon {
-  width: 14px;
-  height: 14px;
+  display: none;
 }
 @keyframes bump {
   0% {
@@ -348,8 +325,7 @@ input {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  border: 1.5px solid rgba(198, 255, 61, 0.55);
-  box-shadow: 0 0 14px -4px var(--lime-glow);
+  border: 1px solid var(--stroke-2);
   overflow: visible;
   flex: none;
   background: #111;
@@ -376,7 +352,6 @@ input {
   border-radius: 50%;
   background: var(--green);
   border: 2px solid var(--bg);
-  box-shadow: 0 0 8px rgba(61, 220, 132, 0.7);
 }
 
 .page-title {
@@ -406,15 +381,13 @@ input {
 }
 
 .section__title {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
   margin: 0;
 }
 
 .section__kicker {
-  font-size: 11px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  font-size: 11.5px;
   color: var(--muted);
   font-weight: 600;
 }
@@ -435,25 +408,18 @@ input {
 .card {
   position: relative;
   border-radius: var(--radius);
-  background: linear-gradient(180deg, rgba(24, 31, 37, 0.82), rgba(12, 16, 19, 0.86));
+  background: var(--panel-solid);
   border: 1px solid var(--stroke);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.04) inset,
-    0 12px 30px -18px rgba(0, 0, 0, 0.8);
   overflow: hidden;
 }
 
+/* Emphasis is a slightly stronger edge, never a halo. */
 .card--glow {
-  border-color: rgba(198, 255, 61, 0.28);
-  box-shadow:
-    0 0 0 1px rgba(198, 255, 61, 0.06) inset,
-    0 0 28px -10px rgba(198, 255, 61, 0.35),
-    0 18px 40px -22px rgba(0, 0, 0, 0.9);
+  border-color: rgba(198, 255, 61, 0.2);
 }
 
 .card--cyan {
-  border-color: rgba(47, 230, 255, 0.28);
-  box-shadow: 0 0 28px -12px rgba(47, 230, 255, 0.35);
+  border-color: rgba(47, 230, 255, 0.2);
 }
 
 .card--pad {
@@ -516,7 +482,6 @@ input {
 .badge--live {
   background: linear-gradient(180deg, #ff3b47, #c3121e);
   color: #fff;
-  box-shadow: 0 0 16px rgba(255, 59, 71, 0.45);
 }
 
 .badge--live::before,
@@ -572,13 +537,10 @@ input {
   color: var(--lime);
   font-weight: 700;
   font-size: 12px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
 }
 
 .dot-live::before {
   background: var(--lime);
-  box-shadow: 0 0 10px var(--lime);
 }
 
 @keyframes pulse-dot {
@@ -615,7 +577,6 @@ input {
   color: var(--lime);
   border-color: rgba(198, 255, 61, 0.6);
   background: rgba(198, 255, 61, 0.1);
-  box-shadow: 0 0 14px -4px var(--lime-glow);
 }
 
 .chip:active {
@@ -649,10 +610,7 @@ input {
 
 .btn--primary {
   color: #0b1200;
-  background: linear-gradient(180deg, #d8ff6a, #a8ec22);
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.25) inset,
-    0 8px 26px -8px rgba(198, 255, 61, 0.65);
+  background: var(--lime);
 }
 
 .btn--ghost {
@@ -714,7 +672,10 @@ input {
 }
 
 .segmented__btn {
-  flex: 1;
+  /* Grow from content width so a long label + count isn't clipped by an equal split. */
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 4px;
   position: relative;
   height: 36px;
   border-radius: 10px;
@@ -732,14 +693,15 @@ input {
 .segmented__btn[aria-selected='true'] {
   color: var(--lime);
 }
+.segmented:has(> :nth-child(4)) .segmented__btn {
+  font-size: 12.5px;
+}
 
 .segmented__ind {
   position: absolute;
   inset: 0;
   border-radius: 10px;
-  background: linear-gradient(180deg, rgba(198, 255, 61, 0.18), rgba(198, 255, 61, 0.06));
-  border: 1px solid rgba(198, 255, 61, 0.5);
-  box-shadow: 0 0 16px -4px var(--lime-glow);
+  background: rgba(198, 255, 61, 0.12);
   z-index: -1;
 }
 
@@ -787,126 +749,74 @@ input {
   height: 3px;
   border-radius: 3px;
   background: var(--lime);
-  box-shadow: 0 0 12px var(--lime);
 }
 
 /* ------------------------------------------------------------------ */
-/* Bottom navigation (F1 style)                                        */
+/* Bottom navigation: the bar's top edge is the track. A top-down F1 car */
+/* rides on it, towing the recessed pit box that marks the active tab.   */
 /* ------------------------------------------------------------------ */
-
 .nav {
   position: absolute;
   left: 10px;
   right: 10px;
-  bottom: calc(var(--safe-bottom) + 8px);
+  bottom: var(--nav-gap);
   height: var(--nav-h);
   z-index: 40;
-  border-radius: 26px;
-  background:
-    radial-gradient(60% 120% at 50% 120%, rgba(198, 255, 61, 0.08), transparent 70%),
-    linear-gradient(180deg, rgba(22, 29, 34, 0.9), rgba(8, 11, 13, 0.96));
-  border: 1px solid var(--stroke-2);
-  backdrop-filter: blur(18px) saturate(1.3);
-  -webkit-backdrop-filter: blur(18px) saturate(1.3);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.06) inset,
-    0 18px 40px -10px rgba(0, 0, 0, 0.85);
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  align-items: end;
-  padding: 0 4px 8px;
-  transition: transform 0.35s var(--ease-out), opacity 0.3s;
+  padding: 0 2px;
+  border-radius: 22px;
+  background: #0c1114;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-top-color: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 16px 32px -16px rgba(0, 0, 0, 0.9);
+  transition:
+    transform 0.42s var(--ease-out),
+    opacity 0.3s;
 }
-/* Lime light strip along the top edge, like a pit-wall LED. */
-.nav::before {
-  content: '';
-  position: absolute;
-  left: 24px;
-  right: 24px;
-  top: -1px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(198, 255, 61, 0.55), transparent);
-  pointer-events: none;
+.nav--live {
+  background: rgba(12, 17, 20, 0.94);
 }
 .nav--hidden {
-  transform: translateY(130%);
+  transform: translateY(calc(100% + var(--nav-gap) + 16px));
   opacity: 0;
   pointer-events: none;
-}
-.nav__track {
-  position: absolute;
-  left: 16px;
-  right: 16px;
-  top: 8px;
-  height: 8px;
-  pointer-events: none;
-}
-.nav__asphalt {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 3px;
-  height: 2px;
-  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.16) 0 8px, transparent 8px 14px);
-  border-radius: 2px;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-}
-.nav__trail {
-  position: absolute;
-  top: 2px;
-  height: 4px;
-  border-radius: 4px;
-  background: linear-gradient(90deg, transparent, var(--lime));
-  box-shadow: 0 0 10px var(--lime);
-  opacity: 0;
-}
-.nav__car {
-  position: absolute;
-  top: -6px;
-  width: 34px;
-  height: 18px;
-  margin-left: -17px;
-  filter: drop-shadow(0 0 6px rgba(198, 255, 61, 0.6));
-  transition: opacity 0.3s;
-}
-.nav--live .nav__car {
-  opacity: 0;
 }
 .nav__item {
   position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-end;
-  gap: 3px;
-  height: 56px;
+  gap: 2px;
   min-width: 0;
+  padding-top: 13px;
   color: var(--muted);
   font-weight: 600;
-  transition: color 0.25s;
+  transition: color 0.2s;
 }
 .nav__icon {
   position: relative;
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 30px;
-  border-radius: 12px;
-  transition: background 0.3s;
+  width: 28px;
+  height: 26px;
 }
 .nav__item .icon {
-  width: 23px;
-  height: 23px;
-  transition: transform 0.3s var(--ease-spring);
+  width: 24px;
+  height: 24px;
+  transition:
+    transform 0.14s var(--ease-out),
+    filter 0.3s;
 }
 .nav__item:active .icon {
-  transform: scale(0.82);
+  transform: scale(0.86);
 }
 .nav__label {
   max-width: 100%;
-  font-size: clamp(9.5px, 2.75vw, 11px);
-  line-height: 1.15;
+  padding: 0 2px;
+  font-size: 11px;
+  line-height: 14px;
   letter-spacing: 0.01em;
   white-space: nowrap;
   overflow: hidden;
@@ -915,46 +825,21 @@ input {
 .nav__item[aria-current='page'] {
   color: var(--lime);
 }
-.nav__item[aria-current='page'] .nav__icon {
-  background: radial-gradient(70% 90% at 50% 100%, rgba(198, 255, 61, 0.22), transparent 72%);
-}
-.nav__item[aria-current='page'] .icon {
-  filter: drop-shadow(0 0 6px var(--lime-glow));
-  transform: translateY(-1px);
-}
-/* "Pit box" marker under the active tab. */
-.nav__item::after {
-  content: '';
-  position: absolute;
-  bottom: -8px;
-  width: 22px;
-  height: 3px;
-  border-radius: 3px 3px 0 0;
-  background: var(--lime);
-  box-shadow: 0 0 10px var(--lime);
-  transform: scaleX(0);
-  transition: transform 0.35s var(--ease-spring);
-}
-.nav__item[aria-current='page']::after {
-  transform: scaleX(1);
-}
 .nav__badge {
   position: absolute;
-  top: 1px;
-  right: -3px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
+  top: -3px;
+  right: -7px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
   border-radius: 9px;
   background: var(--lime);
   color: #0b1200;
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 700;
-  line-height: 18px;
+  line-height: 17px;
   text-align: center;
-  box-shadow:
-    0 0 0 2px #0b0f12,
-    0 0 12px var(--lime-glow);
+  box-shadow: 0 0 0 2px #0d1114;
   animation: badge-pop 0.5s var(--ease-spring);
 }
 @keyframes badge-pop {
@@ -965,83 +850,132 @@ input {
     transform: none;
   }
 }
-.nav__center {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  height: 56px;
-}
-.nav__pulse {
+/* Race status on the Live tab: red = session running, yellow = SC / VSC. */
+.nav__flag {
   position: absolute;
-  bottom: 6px;
-  width: 64px;
-  height: 64px;
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: radial-gradient(circle at 50% 30%, #253a14, #0a0f06 72%);
-  border: 2px solid var(--lime);
-  box-shadow:
-    0 0 0 5px rgba(8, 11, 13, 0.92),
-    0 0 0 6px rgba(198, 255, 61, 0.2),
-    0 0 26px rgba(198, 255, 61, 0.5);
-  color: var(--lime);
-  transition: transform 0.2s var(--ease-out), background 0.3s, color 0.3s, box-shadow 0.3s;
+  background: var(--red);
+  box-shadow: 0 0 0 2px #0c1114;
 }
-.nav__pulse:active {
-  transform: scale(0.92);
-}
-.nav__pulse[aria-current='page'] {
-  background: radial-gradient(circle at 50% 30%, #e2ff8a, #93d61c 78%);
-  color: #0b1200;
-  box-shadow:
-    0 0 0 5px rgba(8, 11, 13, 0.92),
-    0 0 0 6px rgba(198, 255, 61, 0.4),
-    0 0 36px rgba(198, 255, 61, 0.85);
-}
-.nav__pulse svg {
-  width: 30px;
-  height: 30px;
-  animation: heartbeat 1.8s ease-in-out infinite;
-}
-.nav__pulse-ring,
-.nav__pulse::after {
+.nav__flag::after {
   content: '';
   position: absolute;
-  inset: -9px;
+  inset: 0;
   border-radius: 50%;
-  border: 1.5px solid rgba(198, 255, 61, 0.5);
-  animation: ring 2.4s ease-out infinite;
+  background: inherit;
+  animation: flag-ping 2s ease-out infinite;
+}
+.nav__flag[data-flag='sc'] {
+  background: var(--yellow);
+}
+@keyframes flag-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  70%,
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+/* The car's layer spans the bar but is not clipped: the car sits on the top edge. */
+.nav__lane {
+  position: absolute;
+  inset: 0;
   pointer-events: none;
 }
-.nav__pulse::after {
-  animation-delay: 1.2s;
-}
-.nav__pulse-label {
+.nav__car {
   position: absolute;
-  bottom: -8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 9px;
-  font-weight: 800;
-  line-height: 14px;
-  letter-spacing: 0.16em;
-  color: #fff;
-  background: linear-gradient(180deg, #ff3b47, #c3121e);
-  border-radius: 5px;
-  padding: 0 5px 0 4px;
-  box-shadow: 0 0 10px rgba(255, 59, 71, 0.55);
+  top: -9px;
+  left: -23px;
+  width: 46px;
+  height: 17px;
+  will-change: transform;
 }
-.nav__pulse-label::before {
-  content: '';
-  width: 5px;
-  height: 5px;
+.nav__car-body,
+.nav__car-chassis {
+  position: absolute;
+  inset: 0;
+}
+.nav__car-chassis svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 2px 1.5px rgba(0, 0, 0, 0.8));
+}
+/* Clipped to the bar's shape: the pit box and lit rim follow the car underneath. */
+.nav__bed {
+  position: absolute;
+  inset: -1px;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.nav__slot {
+  position: absolute;
+  top: 0;
+  left: 1px;
+  width: 0;
+  height: 100%;
+  will-change: transform;
+}
+/* Pit box: a recess in the bar under the car, lit from the car's side. */
+.nav__well {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  width: calc((100vw - 24px) / 5 - 10px);
+  max-width: 76px;
+  height: 52px;
+  margin-left: calc(min((100vw - 24px) / 5 - 10px, 76px) / -2);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(198, 255, 61, 0.13), rgba(198, 255, 61, 0.03) 55%, rgba(0, 0, 0, 0.2));
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.65),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+  transform-origin: 50% 0;
+}
+/* The stretch of track edge the car is standing on. */
+.nav__rim {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 112px;
+  height: 1px;
+  margin-left: -56px;
+  background: linear-gradient(90deg, transparent, rgba(198, 255, 61, 0.55), transparent);
+}
+/* Long-exposure light streak along the track edge; width/opacity driven per frame. */
+.nav__trail {
+  position: absolute;
+  right: 90%;
+  top: 50%;
+  width: 0;
+  height: 2px;
+  margin-top: -1px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, rgba(198, 255, 61, 0.4) 45%, rgba(230, 255, 160, 0.95));
+  opacity: 0;
+}
+.nav-car__rain {
+  fill: #4a0d12;
+  transition: fill 0.1s;
+}
+.nav__car[data-brake] .nav-car__rain {
+  fill: #ff3b47;
+}
+.nav__puff {
+  position: absolute;
   border-radius: 50%;
-  background: #fff;
-  animation: pulse-dot 1.4s ease-in-out infinite;
+  background: radial-gradient(closest-side, rgba(214, 222, 228, 0.55), rgba(214, 222, 228, 0.12) 60%, transparent);
+  pointer-events: none;
 }
 @keyframes ring {
   0% {
@@ -1051,19 +985,6 @@ input {
   100% {
     transform: scale(1.4);
     opacity: 0;
-  }
-}
-@keyframes heartbeat {
-  0%,
-  40%,
-  100% {
-    transform: scale(1);
-  }
-  12% {
-    transform: scale(1.14);
-  }
-  24% {
-    transform: scale(0.98);
   }
 }
 
@@ -1090,10 +1011,8 @@ input {
 }
 
 .hero__sub {
-  font-size: 10.5px;
-  letter-spacing: 0.24em;
+  font-size: 11.5px;
   color: var(--muted);
-  text-transform: uppercase;
 }
 
 .lap-pill {
@@ -1165,10 +1084,8 @@ input {
   justify-content: space-between;
   align-items: center;
   margin-top: 10px;
-  font-size: 10.5px;
-  letter-spacing: 0.24em;
+  font-size: 11.5px;
   color: var(--muted);
-  text-transform: uppercase;
 }
 
 /* Track map SVG */
@@ -1254,9 +1171,7 @@ input {
 }
 
 .kv__k {
-  font-size: 10.5px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: 11.5px;
   color: var(--muted);
   font-weight: 600;
 }
@@ -1446,13 +1361,10 @@ input {
 .toast--win {
   --toast-c: var(--lime);
   --toast-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230b1200' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 4h8v5a4 4 0 0 1-8 0z'/%3E%3Cpath d='M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4v3h-4z'/%3E%3C/svg%3E");
-  box-shadow:
-    0 0 34px -6px var(--lime-glow),
-    0 16px 36px -12px rgba(0, 0, 0, 0.85);
+  box-shadow: 0 16px 36px -12px rgba(0, 0, 0, 0.85);
 }
 .toast--win::before {
   background-color: var(--lime);
-  box-shadow: 0 0 18px var(--lime-glow);
   animation: toast-trophy 0.9s var(--ease-spring) 0.15s both;
 }
 .toast--win strong {
@@ -1607,8 +1519,6 @@ input {
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   font-size: 15px;
   padding-left: 54px;
   pointer-events: none;
@@ -1691,9 +1601,7 @@ input {
 
 .outcome[aria-checked='true'] {
   border-color: var(--lime);
-  box-shadow:
-    0 0 0 1px var(--lime) inset,
-    0 0 22px -4px var(--lime-glow);
+  box-shadow: 0 0 0 1px var(--lime) inset;
   background: linear-gradient(180deg, rgba(198, 255, 61, 0.14), rgba(12, 16, 19, 0.9));
 }
 
@@ -1767,10 +1675,8 @@ input {
 }
 
 .countdown__k {
-  font-size: 10px;
-  letter-spacing: 0.16em;
+  font-size: 11.5px;
   color: var(--text-2);
-  text-transform: uppercase;
   margin-bottom: 4px;
 }
 
@@ -1779,12 +1685,10 @@ input {
   font-weight: 700;
   font-size: 26px;
   color: var(--lime);
-  text-shadow: 0 0 14px var(--lime-glow);
 }
 
 .countdown--urgent .countdown__v {
   color: var(--yellow);
-  text-shadow: 0 0 14px rgba(255, 209, 46, 0.5);
 }
 
 .countdown--locked .countdown__v {
@@ -1866,7 +1770,6 @@ input {
   border: 3px solid rgba(255, 255, 255, 0.08);
   border-top-color: var(--lime);
   border-right-color: rgba(198, 255, 61, 0.45);
-  filter: drop-shadow(0 0 6px var(--lime-glow));
   animation: spin 0.8s linear infinite;
 }
 @keyframes spin {
@@ -1899,17 +1802,9 @@ input {
   align-items: center;
   gap: 8px;
 }
-.section__title::before {
-  content: '';
-  width: 4px;
-  height: 16px;
-  border-radius: 2px;
-  background: linear-gradient(180deg, var(--lime), var(--lime-2));
-  box-shadow: 0 0 10px var(--lime-glow);
-  flex: none;
-}
+/* Eyebrow labels above headings are noise: the heading carries the section. */
 .section__kicker {
-  margin-bottom: 2px;
+  display: none;
 }
 .link-btn {
   min-height: 44px;
@@ -1922,7 +1817,7 @@ input {
   transition: transform 0.18s var(--ease-out);
 }
 .card--press:active {
-  border-color: rgba(198, 255, 61, 0.35);
+  background: #131a1f;
 }
 .empty__orb {
   width: 76px;
@@ -1931,10 +1826,8 @@ input {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  color: var(--lime);
-  background: radial-gradient(circle at 50% 35%, rgba(198, 255, 61, 0.2), rgba(198, 255, 61, 0.02) 70%);
-  border: 1px solid rgba(198, 255, 61, 0.3);
-  box-shadow: 0 0 34px -8px var(--lime-glow);
+  color: var(--text-2);
+  background: rgba(255, 255, 255, 0.05);
 }
 .empty__orb .icon {
   width: 34px;

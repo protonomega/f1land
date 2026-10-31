@@ -8,13 +8,13 @@ importers:
 
   .:
     dependencies:
+      '@fontsource-variable/onest':
+        specifier: ^5.3.1
+        version: 5.3.1
       '@fontsource/chakra-petch':
         specifier: ^5.3.0
         version: 5.3.0
       '@fontsource/michroma':
-        specifier: ^5.3.0
-        version: 5.3.0
-      '@fontsource/titillium-web':
         specifier: ^5.3.0
         version: 5.3.0
       motion:
@@ -126,14 +126,14 @@ packages:
       '@noble/hashes':
         optional: true
 
+  '@fontsource-variable/onest@5.3.1':
+    resolution: {integrity: sha512-xaaw6G4HDB2/RczsWLD/2bnib4ykmQlTlBUN3GOEOiyErilZukQWVJG95h9zwAy0i8KY+QzDa+COPfqhI72Acw==}
+
   '@fontsource/chakra-petch@5.3.0':
     resolution: {integrity: sha512-QZvbM/q2R6n1pg2x+TJPftZmBNS+ADU37L4Z4L/6UJIz+JZ/SRaEf8usPFRiP7Ht28sIideMu/Bm1SnGlSrwNw==}
 
   '@fontsource/michroma@5.3.0':
     resolution: {integrity: sha512-9sbGD7ek1hGvq0TmgNPFbuI3k7qwXVdZ+zCDsTHDGRIQqfYrpYWwEYcwH2fzOtvn8uiGqzAoJ72vuFE3v/hDdg==}
-
-  '@fontsource/titillium-web@5.3.0':
-    resolution: {integrity: sha512-+nO3ACtHoBgBgq5rzKYImyJqcbRR5cG7D5O73Iu9qMEVlpQ4KVpdDs+XJexZ6Tgcek4xSlkCI82Xd3yLNF++6w==}
 
   '@jridgewell/resolve-uri@3.1.2':
     resolution: {integrity: sha512-bRISgCIjP20/tbWSPWMEi54QVPRZExkuD9lJL+UIxUKtwVJA8wW1Trb1jMs1RFXo1CBTNZ/5hpC9QvmKWdopKw==}
@@ -918,11 +918,11 @@ snapshots:
 
   '@exodus/bytes@1.16.0': {}
 
+  '@fontsource-variable/onest@5.3.1': {}
+
   '@fontsource/chakra-petch@5.3.0': {}
 
   '@fontsource/michroma@5.3.0': {}
-
-  '@fontsource/titillium-web@5.3.0': {}
 
   '@jridgewell/resolve-uri@3.1.2': {}
 

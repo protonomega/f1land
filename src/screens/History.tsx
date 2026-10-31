@@ -41,7 +41,7 @@ export function HistoryScreen() {
   return (
     <>
       <SubHeader onBack={back} />
-      <PageHead kicker={t('scr.history.kicker')} title={t('profile.history')} sub={t('scr.history.sub')} />
+      <PageHead title={t('profile.history')} sub={t('scr.history.sub')} />
       <Card className="sc-hsum" pad>
         <div>
           <b className="num">{stats.total}</b>

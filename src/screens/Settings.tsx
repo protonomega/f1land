@@ -72,7 +72,7 @@ export function SettingsScreen() {
   return (
     <>
       <SubHeader onBack={back} />
-      <PageHead kicker={t('scr.settings.kicker')} title={t('settings.title')} />
+      <PageHead title={t('settings.title')} />
 
       <Reveal i={0} className="section">
         <div className="sc-set-group">

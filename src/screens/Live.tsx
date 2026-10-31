@@ -10,13 +10,15 @@ import { DRIVER_BY_ID, TEAM_BY_ID } from '@/data/teams';
 import type { LiveState, Moment } from '@/sim/types';
 import type { CameraMode } from '@/three/engine/cameraRig';
 import { flagEmoji, fmtCountdown, getLang, t } from '@/i18n/core';
-import { useSceneView, getScene } from '@/app/SceneHost';
-import { DriverAvatar, Sheet } from '@/ui/kit';
-import { IconEye, IconFast, IconLayers, IconMap, IconPause, IconPlay, IconSettings, IconWarning, IconChevron } from '@/ui/icons';
+import { useSceneView, getScene, webglAvailable } from '@/app/SceneHost';
+import { DriverAvatar, Segmented, Sheet } from '@/ui/kit';
+import { Toggle } from './common';
+import type { RenderMode } from '@/store/settings';
+import { IconEye, IconFast, IconPause, IconPlay, IconSettings, IconWarning, IconChevron } from '@/ui/icons';
 import { haptic } from '@/telegram/sdk';
 import { sfx } from '@/audio/sfx';
 import { DragSheet, type Snap } from '@/ui/bet/DragSheet';
-import { Charts, EventsFeed, FollowCard, MomentIcon, MOMENT_TONE, MyEntries, PoolsTab, TimingTable, TowerPanel, TowerStrip, momentText } from '@/ui/bet/livePanels';
+import { Charts, EventsFeed, FollowCard, MomentIcon, MOMENT_TONE, MyEntries, PoolsTab, TimingTable, TowerStrip, momentText } from '@/ui/bet/livePanels';
 import { CAMERA_ICON, FlagGlyph, IcChart, IcChat, IcCloud, IcList, IcRain, IcSun, IcTicket, IcTrophy, RcBadge } from '@/ui/bet/icons';
 import '@/styles/live.css';
 
@@ -57,8 +59,7 @@ export function LiveScreen() {
   const [snap, setSnap] = useState<Snap>('peek');
   const [channelsOpen, setChannelsOpen] = useState(false);
   const [driverPicker, setDriverPicker] = useState(false);
-  const [director, setDirector] = useState(false);
-  const [towerOpen, setTowerOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
   const [heights, setHeights] = useState<Record<Snap, number>>(() => snapHeights(640));
   const rootRef = useRef<HTMLDivElement>(null);
   const zoneRef = useRef<HTMLDivElement>(null);
@@ -110,6 +111,8 @@ export function LiveScreen() {
   }, []);
 
   const follow = live?.cars.find((c) => c.id === followId) ?? null;
+  const rival = live?.cars.find((c) => c.id === rivalId) ?? null;
+  const rivalCandidate = follow ? (live?.cars.find((c) => c.position === follow.position - 1) ?? live?.cars.find((c) => c.position === follow.position + 1) ?? null) : null;
   const flags = live ? flagItems(live) : [];
 
   const pickTab = (v: Tab) => {
@@ -130,10 +133,10 @@ export function LiveScreen() {
   ];
 
   return (
-    <div ref={rootRef} className={`live lv lv--${snap} ${flags.length ? 'lv--flags' : ''} ${towerOpen ? 'lv--tower' : ''}`}>
+    <div ref={rootRef} className={`live lv lv--${snap} ${flags.length ? 'lv--flags' : ''}`}>
       <div ref={zoneRef} className="lv-zone" aria-hidden="true" />
 
-      {/* Top bar */}
+      {/* Top bar: session (tap = switch broadcast) with live status, and the view button */}
       <div className="lv-top">
         <button
           type="button"
@@ -146,7 +149,10 @@ export function LiveScreen() {
         >
           <span className="lv-session__flag">{flagEmoji(meta?.countryCode ?? '')}</span>
           <span className="lv-session__text">
-            <span className="lv-session__title ellipsis">{channel.title[lang]}</span>
+            <span className="lv-session__title">
+              <span className="ellipsis">{channel.title[lang]}</span>
+              <IconChevron dir="down" size={12} />
+            </span>
             <span className="lv-session__sub ellipsis">
               {meta?.shortName ?? meta?.name}
               {live && (
@@ -154,37 +160,45 @@ export function LiveScreen() {
                   <span className="lv-dot-sep" />
                   <WeatherIcon c={live.weather.condition} />
                   <span className="num">{Math.round(live.weather.airC)}°</span>
-                  <span className="lv-session__track num">
-                    {t('lv.trackShort')} {Math.round(live.weather.trackC)}°
-                  </span>
                 </>
               )}
             </span>
           </span>
-          <IconChevron dir="down" size={14} />
-        </button>
-        <div className={`lv-status ${mode === 'replay' ? 'lv-status--replay' : ''}`}>
-          <span className="lv-status__mode">
-            {mode === 'live' ? (
-              <>
-                <i className="lv-live-dot" /> LIVE
-              </>
-            ) : (
-              t('races.replay')
+          <span className={`lv-status ${mode === 'replay' ? 'lv-status--replay' : ''}`}>
+            <span className="lv-status__mode">
+              {mode === 'live' ? (
+                <>
+                  <i className="lv-live-dot" /> LIVE
+                </>
+              ) : (
+                t('races.replay')
+              )}
+            </span>
+            {live && !isQuali && live.totalLaps && (
+              <span className="lv-status__lap num">
+                <small>{t('lv.lapShort')}</small> <b>{Math.min(live.leaderLap, live.totalLaps)}</b>
+                <small>/{live.totalLaps}</small>
+              </span>
+            )}
+            {live?.segment && (
+              <span className="lv-status__lap num">
+                <small>{live.segment.id}</small> <b>{fmtCountdown(live.segment.remainingMs)}</b>
+              </span>
             )}
           </span>
-          {live && !isQuali && live.totalLaps && (
-            <span className="lv-status__lap num">
-              <small>{t('lv.lapShort')}</small> <b>{Math.min(live.leaderLap, live.totalLaps)}</b>
-              <small>/{live.totalLaps}</small>
-            </span>
-          )}
-          {live?.segment && (
-            <span className="lv-status__lap num">
-              <small>{live.segment.id}</small> <b>{fmtCountdown(live.segment.remainingMs)}</b>
-            </span>
-          )}
-        </div>
+        </button>
+        <button
+          type="button"
+          className="lv-viewbtn"
+          aria-label={t('lv.view.title')}
+          aria-haspopup="dialog"
+          onClick={() => {
+            haptic.tap();
+            setViewOpen(true);
+          }}
+        >
+          <IconSettings size={20} />
+        </button>
       </div>
 
       {/* Timing strip */}
@@ -194,11 +208,6 @@ export function LiveScreen() {
           followId={followId}
           quali={isQuali}
           cut={live.segment?.cutPosition ?? null}
-          open={towerOpen}
-          onToggle={() => {
-            haptic.tap();
-            setTowerOpen(!towerOpen);
-          }}
           onPick={(id) => {
             haptic.impact('light');
             setFollow(id);
@@ -217,20 +226,6 @@ export function LiveScreen() {
         </div>
       )}
 
-      {live && towerOpen && (
-        <TowerPanel
-          cars={live.cars}
-          followId={followId}
-          quali={isQuali}
-          cut={live.segment?.cutPosition ?? null}
-          onClose={() => setTowerOpen(false)}
-          onPick={(id) => {
-            haptic.impact('light');
-            setFollow(id);
-          }}
-        />
-      )}
-
       {webglLost && (
         <div className="lv-notice" role="alert">
           <IconWarning size={18} />
@@ -244,15 +239,13 @@ export function LiveScreen() {
         </div>
       )}
 
-      <Rail onDirector={() => setDirector(true)} />
-
       {live && <StartLights lights={live.lights} />}
 
       {/* Overlays stacked above the sheet: moments → replay → followed driver */}
       <div ref={aboveRef} className="lv-above">
         <MomentStack />
         {mode === 'replay' && runner && <ReplayBar />}
-        {follow && live && <FollowCard car={follow} cars={live.cars} quali={isQuali} rivalId={rivalId} onSwap={() => (haptic.tap(), setDriverPicker(true))} onRival={setRival} />}
+        {follow && live && <FollowCard car={follow} cars={live.cars} quali={isQuali} onOpen={() => (haptic.tap(), setDriverPicker(true))} />}
       </div>
 
       {(loading || !live) && (
@@ -274,7 +267,7 @@ export function LiveScreen() {
         header={
           <div className="lv-tabs" role="tablist" aria-label={t('live.pools')}>
             {tabs.map((o) => (
-              <button key={o.id} type="button" role="tab" aria-selected={tab === o.id} className={`lv-tab ${tab === o.id ? 'lv-tab--on' : ''}`} onClick={() => pickTab(o.id)}>
+              <button key={o.id} type="button" role="tab" aria-selected={tab === o.id} aria-label={o.count ? `${o.label} (${o.count})` : o.label} className={`lv-tab ${tab === o.id ? 'lv-tab--on' : ''}`} onClick={() => pickTab(o.id)}>
                 {tab === o.id && !reduced && <motion.span layoutId="lv-tab-ind" className="lv-tab__ind" transition={{ type: 'spring', stiffness: 520, damping: 40 }} />}
                 {tab === o.id && reduced && <span className="lv-tab__ind" />}
                 <span className="lv-tab__icon">{o.icon}</span>
@@ -352,6 +345,15 @@ export function LiveScreen() {
         title={pickList ? t('live.overlap') : t('live.pickDriver')}
         label={t('live.pickDriver')}
       >
+        {!pickList && rivalCandidate && (
+          <div className="lv-rival">
+            <span className="lv-rival__txt">
+              <b>{t('lv.rival.title', { d: DRIVER_BY_ID[(rival ?? rivalCandidate).id]?.code ?? '' })}</b>
+              <small>{t('lv.rival.sub')}</small>
+            </span>
+            <Toggle on={!!rival} label={t('pool.rivalTag')} onChange={(on) => setRival(on ? rivalCandidate.id : null)} />
+          </div>
+        )}
         <div className="lv-drivers">
           {(live?.cars ?? [])
             .filter((c) => !pickList || pickList.includes(c.id))
@@ -379,9 +381,7 @@ export function LiveScreen() {
         </div>
       </Sheet>
 
-      <Sheet open={director} onClose={() => setDirector(false)} title={t('live.directorPanel')} label={t('live.directorPanel')}>
-        <DirectorPanel onClose={() => setDirector(false)} />
-      </Sheet>
+      <ViewSheet open={viewOpen} onClose={() => setViewOpen(false)} />
     </div>
   );
 }
@@ -406,80 +406,68 @@ function flagItems(live: LiveState): Array<{ key: string; tone: 'sc' | 'red' | '
   return out;
 }
 
-function Rail({ onDirector }: { onDirector: () => void }) {
+/** Everything about how the race is shown lives in one sheet behind the header's view button. */
+function ViewSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const camera = useSettings((s) => s.camera);
   const renderMode = useSettings((s) => s.renderMode);
   const showZones = useSettings((s) => s.showZones);
   const setSettings = useSettings((s) => s.set);
-  const [camMenu, setCamMenu] = useState(false);
-  const CamIcon = CAMERA_ICON[camera];
+  const webglLost = useSceneView((s) => s.webglLost);
+  const can3d = !webglLost && webglAvailable();
   return (
-    <>
-      <div className="lv-rail">
-        <button type="button" className={`lv-rail__btn ${camMenu ? 'lv-rail__btn--on' : ''}`} aria-label={t('live.camera')} aria-expanded={camMenu} onClick={() => (haptic.tap(), setCamMenu(!camMenu))}>
-          {CamIcon && <CamIcon size={20} />}
-        </button>
-        <button
-          type="button"
-          className={`lv-rail__btn ${showZones ? 'lv-rail__btn--on' : ''}`}
-          aria-label={t('live.zones')}
-          aria-pressed={showZones}
-          onClick={() => {
-            haptic.tap();
-            setSettings({ showZones: !showZones });
-          }}
-        >
-          <IconLayers size={20} />
-        </button>
-        <button
-          type="button"
-          className="lv-rail__btn"
-          aria-label={renderMode === '3d' ? t('live.view2d') : t('live.view3d')}
-          onClick={() => {
-            haptic.tap();
-            setSettings({ renderMode: renderMode === '3d' ? '2d' : '3d' });
-          }}
-        >
-          {renderMode === '3d' ? <IconMap size={20} /> : <span className="lv-rail__txt">3D</span>}
-        </button>
-        <button type="button" className="lv-rail__btn" aria-label={t('live.directorPanel')} onClick={() => (haptic.tap(), onDirector())}>
-          <IconSettings size={20} />
-        </button>
-      </div>
-      <AnimatePresence>
-        {camMenu && (
-          <>
-            <motion.button type="button" key="bd" className="lv-cam-bd" aria-label={t('ui.close')} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setCamMenu(false)} />
-            <motion.div key="menu" className="lv-cam" initial={{ opacity: 0, x: 16, scale: 0.96 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: 16, scale: 0.96 }} transition={{ duration: 0.18 }} role="menu" aria-label={t('live.camera')}>
-              <div className="lv-cam__title">{t('live.camera')}</div>
-              <div className="lv-cam__grid">
-                {CAMS.map((c) => {
-                  const I = CAMERA_ICON[c];
-                  return (
-                    <button
-                      key={c}
-                      type="button"
-                      role="menuitemradio"
-                      aria-checked={camera === c}
-                      className={`lv-cam__item ${camera === c ? 'lv-cam__item--on' : ''}`}
-                      onClick={() => {
-                        haptic.impact('light');
-                        sfx.select();
-                        setSettings({ camera: c });
-                        setCamMenu(false);
-                      }}
-                    >
-                      {I && <I size={22} />}
-                      <span>{t(`live.cam.${c}`)}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </motion.div>
-          </>
+    <Sheet open={open} onClose={onClose} title={t('lv.view.title')} label={t('lv.view.title')}>
+      <div className="lv-view">
+        {can3d && (
+          <Segmented<RenderMode>
+            label={t('lv.view.title')}
+            value={renderMode}
+            onChange={(v) => setSettings({ renderMode: v })}
+            options={[
+              { id: '3d', label: t('live.view3d') },
+              { id: '2d', label: t('live.view2d') },
+            ]}
+          />
         )}
-      </AnimatePresence>
-    </>
+        {can3d && renderMode === '3d' && (
+          <section className="lv-view__sec">
+            <h3 className="lv-view__h">{t('live.camera')}</h3>
+            <div className="lv-cam__grid" role="radiogroup" aria-label={t('live.camera')}>
+              {CAMS.map((c) => {
+                const I = CAMERA_ICON[c];
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    role="radio"
+                    aria-checked={camera === c}
+                    className={`lv-cam__item ${camera === c ? 'lv-cam__item--on' : ''}`}
+                    onClick={() => {
+                      haptic.impact('light');
+                      sfx.select();
+                      setSettings({ camera: c });
+                    }}
+                  >
+                    {I && <I size={20} />}
+                    <span>{t(`live.cam.${c}`)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
+        <div className="lv-view__row">
+          <span className="lv-view__txt">
+            <b>{t('lv.view.zones')}</b>
+            <small>{t('lv.view.zonesSub')}</small>
+          </span>
+          <Toggle on={showZones} label={t('live.zones')} onChange={(v) => setSettings({ showZones: v })} />
+        </div>
+        <section className="lv-view__sec">
+          <h3 className="lv-view__h">{t('live.directorPanel')}</h3>
+          <DirectorPanel onClose={onClose} />
+        </section>
+      </div>
+    </Sheet>
   );
 }
 
@@ -526,7 +514,7 @@ function StartLights({ lights }: { lights: number | 'off' }) {
 const BIG_KINDS = new Set<Moment['kind']>(['SC', 'VSC', 'RED', 'FINISH']);
 
 function MomentStack() {
-  const [items, setItems] = useState<Array<Moment & { big: boolean; tag: string | null }>>([]);
+  const [items, setItems] = useState<Array<Moment & { big: boolean }>>([]);
   const battles = useRef(0);
   useEffect(
     () =>
@@ -536,43 +524,34 @@ function MomentStack() {
         if (m.kind === 'BATTLE' && !involved && battles.current++ % 2 === 1) return;
         if (m.kind === 'TRACK_LIMITS' && !involved) return;
         const big = (m.kind === 'OVERTAKE' && involved) || BIG_KINDS.has(m.kind);
-        let tag: string | null = null;
-        if (m.kind === 'OVERTAKE' && involved) {
-          tag = t('lv.tag.overtake');
-          haptic.impact('medium');
-        } else if (m.kind === 'SC' || m.kind === 'VSC' || m.kind === 'RED') {
-          tag = m.kind === 'RED' ? t('lv.tag.red') : m.kind;
+        if (m.kind === 'OVERTAKE' && involved) haptic.impact('medium');
+        else if (m.kind === 'SC' || m.kind === 'VSC' || m.kind === 'RED') {
           haptic.notify('warning');
           sfx.warn();
-        } else if (m.kind === 'FASTEST_LAP') {
-          tag = t('lv.tag.fastest');
-          if (involved) haptic.impact('light');
-        } else if (m.kind === 'BATTLE') tag = t('lv.tag.battle');
-        else if (m.kind === 'PIT' && involved) haptic.impact('light');
-        setItems((x) => [...x.slice(-1), { ...m, big, tag }]);
+        } else if ((m.kind === 'FASTEST_LAP' || m.kind === 'PIT') && involved) haptic.impact('light');
+        // One moment at a time: a new one replaces the previous.
+        setItems([{ ...m, big }]);
         setTimeout(() => setItems((x) => x.filter((i) => i.id !== m.id)), big ? 4200 : 3200);
       }),
     [],
   );
   return (
     <div className="lv-moments" aria-live="polite">
-      <AnimatePresence initial={false}>
+      <AnimatePresence initial={false} mode="popLayout">
         {items.map((m) => (
           <motion.div
             key={m.id}
-            layout
             className={`lv-moment ${m.big ? 'lv-moment--big' : ''} lv-moment--${m.kind.toLowerCase()}`}
-            style={{ ['--tone' as string]: MOMENT_TONE[m.kind] ?? 'var(--stroke-2)' }}
-            initial={{ opacity: 0, x: -24 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 24 }}
-            transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+            style={{ ['--tone' as string]: MOMENT_TONE[m.kind] ?? 'var(--text-2)' }}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
           >
             <span className="lv-moment__icon">
-              <MomentIcon kind={m.kind} size={18} />
+              <MomentIcon kind={m.kind} size={16} />
             </span>
             <span className="lv-moment__text">{momentText(m)}</span>
-            {m.tag && <span className="lv-moment__tag">{m.tag}</span>}
           </motion.div>
         ))}
       </AnimatePresence>

@@ -115,8 +115,10 @@ for (const lang of ['ru', 'en'] as const) {
     expect(clipped).toEqual([]);
     await page.getByRole('radio').first().click();
     const cta = (await page.locator('.sw').boundingBox())!;
-    const nav = (await page.getByRole('navigation').boundingBox())!;
-    expect(cta.y + cta.height).toBeLessThanOrEqual(nav.y + 1);
+    // The tab bar steps aside on the pool route, so the CTA only has to clear the viewport edge.
+    await expect(page.locator('nav.nav')).toHaveAttribute('aria-hidden', 'true');
+    await expect.poll(async () => (await page.locator('nav.nav').boundingBox())!.y).toBeGreaterThanOrEqual(page.viewportSize()!.height);
+    expect(cta.y + cta.height).toBeLessThanOrEqual(page.viewportSize()!.height);
     const vw = page.viewportSize()!.width;
     const overflow = await page.evaluate(() => document.querySelector('.screen')!.scrollWidth - document.querySelector('.screen')!.clientWidth);
     expect(overflow).toBeLessThanOrEqual(0);

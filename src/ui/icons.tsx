@@ -257,20 +257,68 @@ export const LogoPulse = ({ className }: { className?: string }) => (
   </svg>
 );
 
-/** Top-down F1 car used in the navigation bar. */
+/**
+ * Top-down 2026-style F1 car in the Pulse Arena livery, nose pointing right (+x).
+ * Drawn on a 100×40 grid; the nav renders it ~48px long, so detail is limited to
+ * shapes that still read at that size. `.nav-car__rain` is the rear rain light.
+ */
 export const NavCar = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 68 36" aria-hidden="true">
-    <g>
-      <rect x="2" y="4" width="9" height="28" rx="2" fill="#0d1206" stroke="#c6ff3d" strokeWidth="1.5" />
-      <rect x="12" y="2" width="9" height="7" rx="2.5" fill="#111" />
-      <rect x="12" y="27" width="9" height="7" rx="2.5" fill="#111" />
-      <rect x="46" y="1" width="8" height="7" rx="2.5" fill="#111" />
-      <rect x="46" y="28" width="8" height="7" rx="2.5" fill="#111" />
-      <path d="M11 13h10l6-3h18l9 6v4l-9 6H27l-6-3H11z" fill="#c6ff3d" />
-      <path d="M31 14.5h9l3 3.5-3 3.5h-9z" fill="#0b1200" />
-      <rect x="58" y="6" width="8" height="24" rx="2" fill="#0d1206" stroke="#c6ff3d" strokeWidth="1.5" />
-      <path d="M54 15h5v6h-5z" fill="#c6ff3d" />
+  <svg className={className} viewBox="0 0 100 40" aria-hidden="true">
+    <defs>
+      <linearGradient id="navcar-body" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#86b816" />
+        <stop offset="0.5" stopColor="#dcff70" />
+        <stop offset="1" stopColor="#86b816" />
+      </linearGradient>
+      <linearGradient id="navcar-tyre" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#24292d" />
+        <stop offset="0.5" stopColor="#0d0f11" />
+        <stop offset="1" stopColor="#24292d" />
+      </linearGradient>
+    </defs>
+    {/* suspension arms sit under the bodywork */}
+    <g stroke="#59636a" strokeWidth="1" strokeLinecap="round">
+      <path d="M22 11 26 16M22 29 26 24M74 10 63 16.5M76 10 66 17.5M74 30 63 23.5M76 30 66 22.5" />
     </g>
+    {/* tyres: wider rears, sidewall highlight */}
+    <g fill="url(#navcar-tyre)" stroke="#3a4248" strokeWidth="0.8">
+      <rect x="14" y="1.5" width="16" height="9" rx="2.6" />
+      <rect x="14" y="29.5" width="16" height="9" rx="2.6" />
+      <rect x="68" y="2.5" width="13" height="7.5" rx="2.3" />
+      <rect x="68" y="30" width="13" height="7.5" rx="2.3" />
+    </g>
+    {/* floor */}
+    <path d="M15 14.5 58 12.5 64 15v10l-6 2.5-43-2z" fill="#07090a" />
+    {/* rear wing + endplates */}
+    <rect x="3" y="6.5" width="9.5" height="27" rx="1.6" fill="#0b0e0a" stroke="#2c3627" strokeWidth="0.6" />
+    <rect x="3.6" y="8" width="1.4" height="24" rx="0.7" fill="#c6ff3d" opacity="0.85" />
+    <rect x="2.5" y="5.5" width="11" height="2.2" rx="1" fill="#2a3320" />
+    <rect x="2.5" y="32.3" width="11" height="2.2" rx="1" fill="#2a3320" />
+    <rect className="nav-car__rain" x="0.6" y="17.6" width="2.6" height="4.8" rx="1" />
+    {/* engine cover, sidepods and nose as one silhouette */}
+    <path
+      d="M12 17.2c7-.6 15-6.4 25-6.6l17 .6c4 .6 6.4 3.2 8.4 4.6L87 18c1.6.3 1.6 3.7 0 4l-24.6 2.2c-2 1.4-4.4 4-8.4 4.6l-17 .6c-10-.2-18-6-25-6.6z"
+      fill="url(#navcar-body)"
+      stroke="#5d8a0c"
+      strokeWidth="0.6"
+    />
+    {/* livery: carbon centre stripe and sidepod flashes */}
+    <path d="M14 19.3 84 19.6v.8l-70 .3z" fill="#0b1200" opacity="0.75" />
+    <path d="M30 13.4 48 12.2l-4 2.6H33zM30 26.6l18 1.2-4-2.6H33z" fill="#0b1200" opacity="0.55" />
+    {/* sidepod inlets + airbox */}
+    <ellipse cx="55.5" cy="13.6" rx="2.4" ry="1.2" fill="#050605" />
+    <ellipse cx="55.5" cy="26.4" rx="2.4" ry="1.2" fill="#050605" />
+    <rect x="45" y="17.8" width="4.4" height="4.4" rx="1.2" fill="#050605" />
+    {/* cockpit, helmet, halo */}
+    <ellipse cx="57.5" cy="20" rx="6.4" ry="3.7" fill="#040504" />
+    <circle cx="56.4" cy="20" r="2.9" fill="#f1f5f7" />
+    <path d="M57.6 18.2a2 2 0 0 1 0 3.6" stroke="#0b1200" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+    <path d="M50.6 20c.4-4.6 12.6-4.6 13.4 0-.8 4.6-13 4.6-13.4 0zM64 20h3.4" stroke="#1b2126" strokeWidth="1.3" fill="none" />
+    {/* front wing: main plane, lime flap, endplates */}
+    <path d="M84 5.5c6 0 10.6 1.6 12 4v21c-1.4 2.4-6 4-12 4l2-4V9.5z" fill="#0b0e0a" stroke="#2c3627" strokeWidth="0.6" />
+    <path d="M93.4 7.4c1.1.5 2 1.2 2.6 2.1v21c-.6.9-1.5 1.6-2.6 2.1z" fill="#c6ff3d" opacity="0.85" />
+    <rect x="83" y="4.4" width="11" height="2" rx="1" fill="#2a3320" />
+    <rect x="83" y="33.6" width="11" height="2" rx="1" fill="#2a3320" />
   </svg>
 );
 

@@ -339,9 +339,12 @@ export function PoolScreen({ poolId }: { poolId: string }) {
             {accept && <i className="pl-chip__dot" />}
             {pool.intake_status === 'SUSPENDED' && pool.status === 'OPEN' ? t('pool.suspended') : t(`pool.status.${pool.status}`)}
           </span>
-          <span className="pl-chip pl-chip--ghost">
-            {t('pool.determinedBy')}: {tx.determinant}
-          </span>
+          {/* Once locked, the state card below states the determinant; don't say it twice. */}
+          {accept && (
+            <span className="pl-chip pl-chip--ghost">
+              {t('pool.determinedBy')}: {tx.determinant}
+            </span>
+          )}
         </div>
         <PoolPulse players={lp.book.players} total={totalPool} live={accept} />
       </section>

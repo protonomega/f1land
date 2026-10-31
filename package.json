@@ -15,9 +15,9 @@
     "circuits": "node scripts/build-circuits.mjs"
   },
   "dependencies": {
+    "@fontsource-variable/onest": "^5.3.1",
     "@fontsource/chakra-petch": "^5.3.0",
     "@fontsource/michroma": "^5.3.0",
-    "@fontsource/titillium-web": "^5.3.0",
     "motion": "^14.7.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

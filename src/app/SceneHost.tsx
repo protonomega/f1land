@@ -59,13 +59,20 @@ export function getScene(): RaceScene | null {
   return activeScene;
 }
 
-function webglAvailable(): boolean {
+let webglOk: boolean | null = null;
+
+/** Probed once: every probe is a live context, and browsers evict the oldest (possibly the scene's) past ~16. */
+export function webglAvailable(): boolean {
+  if (webglOk !== null) return webglOk;
   try {
     const c = document.createElement('canvas');
-    return !!(c.getContext('webgl2') || c.getContext('webgl'));
+    const gl = c.getContext('webgl2') ?? c.getContext('webgl');
+    webglOk = !!gl;
+    gl?.getExtension('WEBGL_lose_context')?.loseContext();
   } catch {
-    return false;
+    webglOk = false;
   }
+  return webglOk;
 }
 
 /**

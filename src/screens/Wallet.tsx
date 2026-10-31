@@ -103,7 +103,7 @@ export function WalletScreen() {
   return (
     <>
       <SubHeader onBack={back} />
-      <PageHead kicker="PULSE · DEMO" title={t('wallet.title')} sub={t('wallet.sub')} />
+      <PageHead title={t('wallet.title')} sub={t('wallet.sub')} />
       <Reveal i={0}>
         <Card glow pad={false} className="sc-whero">
           <div className="sc-whero__coins" aria-hidden="true">

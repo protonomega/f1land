@@ -43,11 +43,10 @@ export function useBack(): () => void {
   };
 }
 
-export function PageHead({ kicker, title, sub, right }: { kicker?: ReactNode; title: ReactNode; sub?: ReactNode; right?: ReactNode }) {
+export function PageHead({ title, sub, right }: { title: ReactNode; sub?: ReactNode; right?: ReactNode }) {
   return (
     <div className="sc-head">
       <div className="sc-head__txt">
-        {kicker && <div className="sc-kicker">{kicker}</div>}
         <h1 className="page-title">{title}</h1>
         {sub && <p className="page-sub">{sub}</p>}
       </div>

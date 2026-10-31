@@ -45,7 +45,6 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  box-shadow: 0 0 12px rgba(255, 255, 255, 0.25);
 }
 .zone-dot--sm {
   width: 9px;
@@ -78,9 +77,7 @@
 }
 .stat__k {
   color: var(--muted);
-  font-size: 10.5px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 11.5px;
 }
 .stat__v {
   font-size: 17px;
@@ -206,7 +203,7 @@
 .ot--on {
   border-color: var(--lime);
   background: linear-gradient(180deg, rgba(198, 255, 61, 0.17), rgba(14, 19, 22, 0.94));
-  box-shadow: inset 0 0 0 1px var(--lime), 0 0 22px rgba(198, 255, 61, 0.22);
+  box-shadow: inset 0 0 0 1px var(--lime);
 }
 .ot--on .ot__icon {
   color: var(--lime);
@@ -226,7 +223,7 @@
 .ot--win {
   border-color: var(--lime);
   background: linear-gradient(180deg, rgba(198, 255, 61, 0.2), rgba(14, 19, 22, 0.94));
-  box-shadow: inset 0 0 0 1px var(--lime), 0 0 26px rgba(198, 255, 61, 0.3);
+  box-shadow: inset 0 0 0 1px var(--lime);
 }
 .ot--lose {
   opacity: 0.42;
@@ -254,7 +251,7 @@
 .ot--zone.ot--on {
   border-color: var(--ot-c);
   background: linear-gradient(180deg, color-mix(in srgb, var(--ot-c) 22%, #10161a), rgba(14, 19, 22, 0.94));
-  box-shadow: inset 0 0 0 1px var(--ot-c), 0 0 24px color-mix(in srgb, var(--ot-c) 35%, transparent);
+  box-shadow: inset 0 0 0 1px var(--ot-c);
 }
 .ot--zone.ot--on .ot__odds {
   color: var(--ot-c);
@@ -406,11 +403,8 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  font-family: var(--font-display);
   font-size: 12px;
   line-height: 1.32;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
   overflow-wrap: anywhere;
 }
 .pl-head__title--long {
@@ -433,7 +427,7 @@
     radial-gradient(120% 140% at 0% 50%, color-mix(in srgb, var(--lk) 16%, transparent), transparent 70%),
     rgba(10, 14, 16, 0.9);
   color: var(--lk);
-  box-shadow: 0 0 18px color-mix(in srgb, var(--lk) 16%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
   transition: border-color 0.4s, color 0.4s, box-shadow 0.4s;
 }
 .pl-lock__ring {
@@ -459,7 +453,6 @@
   stroke-width: 2.5;
   stroke-linecap: round;
   transition: stroke-dashoffset 0.25s linear, stroke 0.4s;
-  filter: drop-shadow(0 0 3px var(--lk));
 }
 .pl-lock__text {
   display: flex;
@@ -469,10 +462,8 @@
 }
 .pl-lock__text small {
   color: var(--text-2);
-  font-size: 8.5px;
+  font-size: 11.5px;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
   white-space: nowrap;
 }
 .pl-lock__text b {
@@ -492,13 +483,9 @@
 .pl-lock--urgent .pl-lock__text small {
   color: var(--lk);
 }
-@keyframes pl-lock-pulse {
-  0%, 100% { box-shadow: 0 0 10px color-mix(in srgb, var(--lk) 18%, transparent); }
-  50% { box-shadow: 0 0 22px color-mix(in srgb, var(--lk) 45%, transparent); }
-}
 @keyframes pl-lock-beat {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 12px color-mix(in srgb, var(--lk) 25%, transparent); }
-  12% { transform: scale(1.045); box-shadow: 0 0 26px color-mix(in srgb, var(--lk) 55%, transparent); }
+  0%, 100% { transform: scale(1); }
+  12% { transform: scale(1.045); }
   24% { transform: scale(1); }
 }
 .pl-lock--closed {
@@ -619,10 +606,7 @@
   align-items: center;
   gap: 6px;
   color: var(--lime);
-  font-family: var(--font-display);
-  font-size: 9.5px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: 11.5px;
 }
 .pl-q__title {
   margin: 8px 0 0;
@@ -699,10 +683,7 @@
   margin: 0 2px 10px;
 }
 .pl-sec__t {
-  font-family: var(--font-display);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: 11.5px;
 }
 .pl-sec__r {
   display: inline-flex;
@@ -751,10 +732,7 @@
 .og__minor-k {
   margin: 6px 2px 0;
   color: var(--muted);
-  font-family: var(--font-display);
-  font-size: 8.5px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: 11.5px;
 }
 .og__minor {
   display: grid;
@@ -780,7 +758,6 @@
 .pl-btn--primary {
   background: var(--lime);
   color: #07090b;
-  box-shadow: 0 0 22px rgba(198, 255, 61, 0.3);
 }
 .pl-btn--ghost {
   border: 1px solid var(--stroke-2);
@@ -866,9 +843,7 @@
 }
 .cf__k {
   color: var(--muted);
-  font-size: 10.5px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 11.5px;
 }
 .cf__q {
   display: grid;
@@ -956,7 +931,6 @@
   border-radius: 50%;
   background: var(--lime);
   color: #07090b;
-  box-shadow: 0 0 22px var(--lime-glow);
 }
 .cf__id {
   color: var(--muted);
@@ -994,10 +968,7 @@
 }
 .pv-k {
   color: var(--muted);
-  font-family: var(--font-display);
-  font-size: 8.5px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: 11.5px;
 }
 .pv-hint {
   margin: 0;
@@ -1042,9 +1013,7 @@
 }
 .pv-now__k {
   color: var(--muted);
-  font-size: 9.5px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: 11.5px;
 }
 .pv-now__v {
   font-size: 15px;
@@ -1085,7 +1054,6 @@
   border: 2px solid #fff;
   border-radius: 50%;
   background: var(--team);
-  box-shadow: 0 0 12px var(--team);
   transition: left 0.3s linear;
 }
 .lapbar__k {
@@ -1209,10 +1177,7 @@
 }
 .duel2__gap-k {
   color: var(--muted);
-  font-family: var(--font-display);
-  font-size: 8px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: 11.5px;
 }
 .duel2__gap-v {
   font-size: 16px;
@@ -1243,7 +1208,6 @@
 }
 .pitlane__line--on {
   background: var(--lime);
-  box-shadow: 0 0 12px var(--lime-glow);
 }
 .pitlane__node {
   position: relative;
@@ -1274,7 +1238,6 @@
 .pitlane__node--on .pitlane__dot {
   border-color: var(--lime);
   color: var(--lime);
-  box-shadow: 0 0 14px var(--lime-glow);
 }
 .pitlane__node--on .pitlane__label {
   color: var(--lime);
@@ -1353,9 +1316,7 @@
   display: flex;
   justify-content: space-between;
   color: var(--text-2);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 11.5px;
 }
 .stint__bar {
   position: relative;
@@ -1392,7 +1353,6 @@
   bottom: 0;
   width: 2px;
   background: #fff;
-  box-shadow: 0 0 8px #fff;
 }
 .stint__wear {
   display: flex;
@@ -1422,9 +1382,7 @@
   align-items: center;
   gap: 4px;
   color: var(--muted);
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 11.5px;
 }
 .pace__v {
   font-size: 18px;
@@ -1598,7 +1556,6 @@
   color: #fff;
   font-size: 11px;
   font-weight: 800;
-  box-shadow: 0 0 10px var(--team);
   transform: scaleY(1.18);
 }
 
@@ -1692,9 +1649,7 @@
 }
 .combo__kind {
   color: var(--cyan);
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 11.5px;
 }
 .combo__text b {
   font-size: 13.5px;
@@ -1734,7 +1689,6 @@
   margin-right: 6px;
   border-radius: 50%;
   background: currentColor;
-  box-shadow: 0 0 8px currentColor;
   animation: lv-pulse 1.6s ease-out infinite;
 }
 .pl-pulse {
@@ -1804,10 +1758,8 @@
   align-items: center;
   gap: 5px;
   color: var(--lime);
-  font-size: 10px;
+  font-size: 11.5px;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
 }
 .pl-sec__live i {
   width: 6px;
@@ -1888,13 +1840,15 @@
   100% { transform: scale(1); }
 }
 
-/* ---------- Ticket dock (sticky, always above the nav) ---------- */
+/* ---------- Ticket dock (sticky; the nav is hidden on the pool route) ---------- */
 .pl--dock {
   padding-bottom: 4px;
 }
 .tdock {
   position: sticky;
-  bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px);
+  /* Sticky insets count from the screen's content edge, which already sits
+     --nav-top + 18px up; -8px leaves the same 10px gap the floating nav uses. */
+  bottom: -8px;
   z-index: 8;
   margin: 16px -4px 0;
   padding: 10px 12px 12px;
@@ -1916,7 +1870,7 @@
 }
 .tdock--urgent {
   border-color: rgba(255, 176, 46, 0.5);
-  box-shadow: 0 -14px 36px rgba(0, 0, 0, 0.55), 0 0 22px rgba(255, 140, 40, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  box-shadow: 0 -14px 36px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 .tdock--locked {
   border-color: var(--stroke-2);
@@ -1935,13 +1889,11 @@
   display: block;
   height: 100%;
   background: linear-gradient(90deg, var(--lime-2), var(--lime));
-  box-shadow: 0 0 8px var(--lime-glow);
   transform-origin: left center;
   transition: transform 0.25s linear;
 }
 .tdock--urgent .tdock__timer span {
   background: linear-gradient(90deg, #ff4d57, #ffb02e);
-  box-shadow: 0 0 10px rgba(255, 120, 60, 0.7);
 }
 .tdock__top {
   display: flex;
@@ -1956,10 +1908,7 @@
   gap: 6px;
   min-width: 0;
   color: var(--text);
-  font-family: var(--font-display);
-  font-size: 9px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: 11.5px;
   white-space: nowrap;
 }
 .tdock__k--urgent {
@@ -2096,10 +2045,8 @@
 }
 .tdock__ret small {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11.5px;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   white-space: nowrap;
 }
 .tdock__ret b {
@@ -2110,7 +2057,6 @@
   font-size: 22px;
   font-weight: 700;
   line-height: 1.1;
-  text-shadow: 0 0 18px rgba(198, 255, 61, 0.35);
 }
 .tdock__ret em {
   color: var(--lime-2);
@@ -2139,7 +2085,7 @@
   animation: tdock-bob 1.8s ease-in-out infinite;
 }
 @keyframes tdock-bob {
-  50% { transform: translateY(-2px); box-shadow: 0 0 14px rgba(198, 255, 61, 0.28); }
+  50% { transform: translateY(-2px); }
 }
 .tdock__prompt-t {
   flex: 1;
@@ -2254,7 +2200,7 @@
   border-color: var(--lime);
   background: rgba(198, 255, 61, 0.14);
   color: var(--lime);
-  box-shadow: 0 0 14px rgba(198, 255, 61, 0.22), inset 0 0 0 1px rgba(198, 255, 61, 0.4);
+  box-shadow: inset 0 0 0 1px rgba(198, 255, 61, 0.4);
 }
 .tdock__chip:disabled {
   opacity: 0.28;
@@ -2275,14 +2221,14 @@
   border-radius: 999px;
   background: linear-gradient(100deg, #d9ff6a 0%, #c6ff3d 45%, #a6e82a 100%);
   color: #0a0d06;
-  box-shadow: 0 0 0 1px rgba(214, 255, 110, 0.65) inset, 0 10px 26px -8px rgba(198, 255, 61, 0.55), 0 0 26px rgba(198, 255, 61, 0.22);
+  box-shadow: 0 0 0 1px rgba(214, 255, 110, 0.65) inset, 0 10px 26px -8px rgba(198, 255, 61, 0.55);
   touch-action: pan-y;
   cursor: grab;
   outline: none;
   transition: box-shadow 0.25s, filter 0.25s, background 0.3s;
 }
 .sw:focus-visible {
-  box-shadow: 0 0 0 2px #07090b, 0 0 0 4px var(--lime), 0 0 26px rgba(198, 255, 61, 0.35);
+  box-shadow: 0 0 0 2px #07090b, 0 0 0 4px var(--lime);
 }
 .sw__fill {
   position: absolute;
@@ -2329,9 +2275,7 @@
   font-family: var(--font-num);
   font-size: 14px;
   font-weight: 700;
-  letter-spacing: 0.07em;
   text-overflow: ellipsis;
-  text-transform: uppercase;
   white-space: nowrap;
 }
 .sw__label small {
@@ -2380,7 +2324,7 @@
   transition: transform 0.4s var(--ease-out), background 0.2s;
 }
 .sw:active:not(.sw--off) .sw__knob {
-  box-shadow: 0 0 0 2px rgba(10, 13, 6, 0.4), 0 6px 16px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(198, 255, 61, 0.6), 0 0 18px rgba(198, 255, 61, 0.6);
+  box-shadow: 0 0 0 2px rgba(10, 13, 6, 0.4), 0 6px 16px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(198, 255, 61, 0.6);
 }
 .sw--armed .sw__knob {
   animation: sw-nudge 0.9s var(--ease-out) infinite;
@@ -2391,7 +2335,7 @@
 }
 .sw--done {
   filter: brightness(1.08);
-  box-shadow: 0 0 0 1px rgba(214, 255, 110, 0.8) inset, 0 0 36px rgba(198, 255, 61, 0.6);
+  box-shadow: 0 0 0 1px rgba(214, 255, 110, 0.8) inset;
 }
 .sw--done .sw__knob {
   background: #07090b;
@@ -2450,7 +2394,6 @@
 .rs__ico--in {
   background: rgba(47, 230, 255, 0.14);
   color: var(--cyan);
-  box-shadow: 0 0 16px rgba(47, 230, 255, 0.2);
 }
 .rs__t,
 .rc__t {
@@ -2554,10 +2497,8 @@
 .rc__item dt,
 .rc__k {
   color: var(--muted);
-  font-size: 9.5px;
+  font-size: 11.5px;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
 }
 .rs__facts dd {
   margin: 0;
@@ -2614,7 +2555,7 @@
   background:
     radial-gradient(90% 80% at 0% 0%, rgba(198, 255, 61, 0.2), transparent 60%),
     linear-gradient(170deg, rgba(24, 34, 26, 0.97), rgba(11, 15, 18, 0.97));
-  box-shadow: 0 0 34px rgba(198, 255, 61, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 .rc--lost {
   border-color: rgba(255, 255, 255, 0.12);
@@ -2648,7 +2589,6 @@
 .rc--won .rc__badge {
   background: var(--lime);
   color: #0a0d06;
-  box-shadow: 0 0 22px var(--lime-glow);
   animation: rc-pop 0.6s var(--ease-spring) 0.1s both;
 }
 .rc--void .rc__badge {
@@ -2661,10 +2601,8 @@
 }
 .rc__t small {
   color: var(--muted);
-  font-size: 9.5px;
+  font-size: 11.5px;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
 }
 .rc__amt {
   display: inline-flex;
@@ -2682,7 +2620,6 @@
 }
 .rc__amt--won {
   color: var(--lime);
-  text-shadow: 0 0 22px rgba(198, 255, 61, 0.45);
 }
 .rc__amt--lost {
   color: #ff9aa0;
@@ -2825,7 +2762,6 @@
   margin-left: -1px;
   border-radius: 1px;
   background: #fff;
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
 }
 .brule__mark b {
   position: absolute;
@@ -2963,10 +2899,8 @@
 }
 .cf__grid dt {
   color: var(--muted);
-  font-size: 9.5px;
+  font-size: 11.5px;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
 }
 .cf__grid dd {
   margin: 0;
@@ -2998,7 +2932,7 @@
   border-radius: 10px;
   color: var(--lime);
   background: rgba(7, 9, 11, 0.55);
-  box-shadow: 0 0 22px rgba(198, 255, 61, 0.35), inset 0 0 12px rgba(198, 255, 61, 0.2);
+  box-shadow: inset 0 0 12px rgba(198, 255, 61, 0.2);
   font-family: var(--font-display);
   font-size: 13px;
   letter-spacing: 0.14em;
@@ -3039,7 +2973,7 @@
 }
 .cf--ok .cf__ticket {
   border-color: rgba(198, 255, 61, 0.6);
-  box-shadow: 0 0 30px rgba(198, 255, 61, 0.15), 0 16px 40px -18px rgba(0, 0, 0, 0.9);
+  box-shadow: 0 16px 40px -18px rgba(0, 0, 0, 0.9);
 }
 
 /* ---------- Spark burst ---------- */
@@ -3059,7 +2993,6 @@
   height: var(--s);
   border-radius: 50%;
   background: var(--c);
-  box-shadow: 0 0 6px var(--c);
   animation: spark 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes spark {

@@ -168,7 +168,6 @@ function StreakFull() {
           <IconFire size={24} />
         </span>
         <div className="stk__txt">
-          <span className="sc-kicker">{t('streak.title')}</span>
           <b className="stk__h">{headline}</b>
           <span className="stk__sub">{view.checkedToday ? t('streak.done') : t('streak.ready')}</span>
         </div>

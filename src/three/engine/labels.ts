@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { DRIVER_BY_ID, TEAM_BY_ID } from '@/data/teams';
 import { t as tr } from '@/i18n/core';
-import type { CameraShot } from './cameraRig';
 
 export type LabelKind = 'follow' | 'rival' | 'near' | 'sc';
 
@@ -30,9 +29,7 @@ export class LabelLayer {
   private els = new Map<string, HTMLDivElement>();
   private positions = new Map<string, number>();
   private zoneEls: HTMLDivElement[] = [];
-  private camTag: HTMLDivElement;
   private fx: HTMLDivElement;
-  private camTimer = 0;
   private v = new THREE.Vector3();
   private placed: Array<{ x: number; y: number }> = [];
   private seen = new Set<string>();
@@ -40,10 +37,6 @@ export class LabelLayer {
 
   constructor(root: HTMLElement) {
     this.root = root;
-    this.camTag = document.createElement('div');
-    this.camTag.className = 'cam-tag';
-    this.camTag.innerHTML = '<span class="cam-tag__dot"></span><span class="cam-tag__name"></span>';
-    root.appendChild(this.camTag);
     this.fx = document.createElement('div');
     this.fx.className = 'scene-fx';
     root.appendChild(this.fx);
@@ -58,18 +51,6 @@ export class LabelLayer {
 
   setPositions(map: Map<string, number>): void {
     this.positions = map;
-  }
-
-  /** Broadcast tag ("TV CAM", "ONBOARD"…) — fades in on every cut. */
-  setShot(shot: CameraShot): void {
-    const name = this.camTag.lastElementChild as HTMLElement;
-    name.textContent = tr(`scene3d.cam.${shot}`);
-    this.camTag.classList.remove('cam-tag--cut');
-    window.clearTimeout(this.camTimer);
-    // Restart the cut animation.
-    void this.camTag.offsetWidth;
-    this.camTag.classList.add('cam-tag--cut');
-    this.camTimer = window.setTimeout(() => this.camTag.classList.remove('cam-tag--cut'), 900);
   }
 
   private ensure(id: string, kind: LabelKind): HTMLDivElement {
@@ -176,10 +157,8 @@ export class LabelLayer {
   }
 
   dispose(): void {
-    window.clearTimeout(this.camTimer);
     for (const el of this.els.values()) el.remove();
     for (const el of this.zoneEls) el.remove();
-    this.camTag.remove();
     this.fx.remove();
     this.els.clear();
     this.zoneEls = [];

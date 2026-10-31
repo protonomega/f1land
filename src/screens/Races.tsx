@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { SEASON_2026, currentOrNextMeeting, meetingStatus, type CalendarSession, type Meeting, type MeetingStatus } from '@/data/calendar';
 import { CHANNELS, channelLaps, getChannel, type DemoChannel } from '@/demo/channels';
 import { usePools, multiplier, type LivePool } from '@/demo/poolEngine';
@@ -11,17 +11,15 @@ import { Header, SubHeader } from '@/app/Header';
 import { useSessionNow } from '@/app/hooks';
 import { poolTexts } from '@/app/poolText';
 import { msUntilLock } from '@/domain/lifecycle';
-import { Card, DriverAvatar, Segmented, TeamBar, useNow } from '@/ui/kit';
+import { Card, DriverAvatar, TeamBar, useNow } from '@/ui/kit';
 import { TrackMap } from '@/ui/TrackMap';
-import { IconCalendar, IconCheck, IconChevron, IconMap, IconPlay, IconTimer, IconTrophy, IconUsers } from '@/ui/icons';
+import { IconCalendar, IconCheck, IconChevron, IconMap, IconPlay, IconTimer, IconUsers } from '@/ui/icons';
 import { flagEmoji, fmtClock, fmtCountdown, fmtDate, fmtDuration, fmtGap, fmtLap, fmtNumber, fmtOdds, getLang, t } from '@/i18n/core';
 import { haptic } from '@/telegram/sdk';
 import { sfx } from '@/audio/sfx';
 import { CircuitThumb, Empty, PageHead, Reveal, StatusPill, meetingDates, meetingName, safeMeta, useBack, useCircuit } from './common';
 
-type Filter = 'all' | 'upcoming' | 'completed';
 
-const pad2 = (n: number) => String(n).padStart(2, '0');
 
 export function channelFor(m: Meeting, s?: CalendarSession): DemoChannel | undefined {
   return CHANNELS.find((c) => c.meetingRound === m.round && (!s || c.sessionType === s.sessionType));
@@ -49,227 +47,257 @@ function focusSession(m: Meeting, now: number): { s: CalendarSession; live: bool
   return next ? { s: next, live: false } : null;
 }
 
-function BigCountdown({ ms }: { ms: number }) {
-  const total = Math.max(0, Math.floor(ms / 1000));
-  const parts: Array<[number, string]> = [
-    [Math.floor(total / 86400), 'scr.cd.d'],
-    [Math.floor((total % 86400) / 3600), 'scr.cd.h'],
-    [Math.floor((total % 3600) / 60), 'scr.cd.m'],
-    [total % 60, 'scr.cd.s'],
-  ];
-  return (
-    <div className="sc-cd" role="timer" aria-label={fmtDuration(ms)}>
-      {parts.map(([v, k]) => (
-        <div className="sc-cd__box" key={k}>
-          <b className="num">{pad2(v)}</b>
-          <span>{t(k)}</span>
-        </div>
-      ))}
-    </div>
-  );
+/** "17 ч 16 мин" style countdown, ticking seconds only in the last hour. */
+function startsIn(ms: number): string {
+  if (ms < 3_600_000) return fmtCountdown(ms);
+  return fmtDuration(ms);
 }
 
 /* ------------------------------------------------------------------ */
 /* Races tab                                                           */
 /* ------------------------------------------------------------------ */
 
+// Calendars headline a race by its country; these read better than the CLDR names.
+const COUNTRY: Record<string, { ru: string; en: string }> = {
+  US: { ru: 'США', en: 'USA' },
+  AE: { ru: 'Абу-Даби', en: 'Abu Dhabi' },
+  GB: { ru: 'Великобритания', en: 'Great Britain' },
+};
+const regionNames = new Map<string, Intl.DisplayNames | null>();
+
+export function countryName(cc: string): string {
+  const lang = getLang();
+  const own = COUNTRY[cc]?.[lang];
+  if (own) return own;
+  if (!regionNames.has(lang)) {
+    try {
+      regionNames.set(lang, new Intl.DisplayNames([lang], { type: 'region' }));
+    } catch {
+      regionNames.set(lang, null);
+    }
+  }
+  return regionNames.get(lang)?.of(cc) ?? cc;
+}
+
+function monthShort(month: number): string {
+  return new Intl.DateTimeFormat(getLang(), { month: 'short', timeZone: 'UTC' }).format(Date.UTC(2026, month - 1, 15)).replace('.', '');
+}
+
+/** Calendar-style date chip from the meeting's local on-track days. */
+function DateBlock({ m }: { m: Meeting }) {
+  const [, m1, d1] = m.startDate.split('-').map(Number) as [number, number, number];
+  const [, m2, d2] = m.endDate.split('-').map(Number) as [number, number, number];
+  return (
+    <span className="rc-date" aria-hidden="true">
+      <b className="num">
+        {d1}–{d2}
+      </b>
+      <small>{m1 === m2 ? monthShort(m1) : `${monthShort(m1)}–${monthShort(m2)}`}</small>
+    </span>
+  );
+}
+
 export function RacesScreen() {
   const now = useNow(1000);
   const push = useNav((s) => s.push);
-  const [filter, setFilter] = useState<Filter>('all');
+  const [allResults, setAllResults] = useState(false);
   const minute = Math.floor(now / 60_000);
   const statuses = useMemo(() => new Map(SEASON_2026.map((m) => [m.id, meetingStatus(m, minute * 60_000 + 30_000)])), [minute]);
   const current = currentOrNextMeeting(now);
   const done = SEASON_2026.filter((m) => statuses.get(m.id) === 'COMPLETED').length;
-  const list = SEASON_2026.filter((m) => {
-    const st = statuses.get(m.id)!;
-    return filter === 'all' || (filter === 'completed' ? st === 'COMPLETED' : st !== 'COMPLETED');
-  });
-  const currentRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
-
-  const scrollTo = (mode: 'current' | 'list', smooth: boolean) => {
-    const anchor = mode === 'current' ? currentRef.current : listRef.current;
-    const sc = anchor?.closest('.screen') as HTMLElement | null;
-    if (!anchor || !sc) return;
-    const sticky = sc.querySelector('.sc-sticky') as HTMLElement | null;
-    // Keep the previous round peeking above the current one so the list reads as a timeline.
-    const peek = mode === 'current' && anchor.previousElementSibling ? 46 : 0;
-    const top = anchor.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - (sticky?.offsetHeight ?? 0) - 10 - peek;
-    if (mode === 'list' && sc.scrollTop < top) return;
-    sc.scrollTo({ top: Math.max(0, top), behavior: smooth ? 'smooth' : 'auto' });
-  };
-
-  useLayoutEffect(() => {
-    scrollTo('current', false);
-  }, []);
-
-  const changeFilter = (f: Filter) => {
-    setFilter(f);
-    requestAnimationFrame(() => scrollTo(f === 'all' ? 'current' : 'list', true));
-  };
+  const ahead = SEASON_2026.filter((m) => m.round > current.round);
+  const results = SEASON_2026.filter((m) => m.id !== current.id && statuses.get(m.id) === 'COMPLETED').reverse();
+  const shown = allResults ? results : results.slice(0, 3);
+  const open = (m: Meeting) => push({ name: 'meeting', meetingId: m.id });
 
   return (
     <>
       <Header />
-      <PageHead kicker={`F1 · ${t('scr.races.kicker')}`} title={t('races.title')} sub={t('races.sub')} />
-      <div className="sc-sticky">
-        <div className="sc-season">
-          <div className="sc-season__k">
-            <span>{t('scr.races.progress')}</span>
-            <b className="num">
-              {done}
-              <i>/{SEASON_2026.length}</i>
-            </b>
+      <PageHead title={t('races.title')} sub={t('scr.races.season', { d: done, n: SEASON_2026.length })} />
+      <WeekendHero m={current} status={statuses.get(current.id)!} now={now} />
+
+      {ahead.length > 0 && (
+        <section className="section">
+          <div className="section__head">
+            <h2 className="section__title">{t('scr.races.ahead')}</h2>
           </div>
-          <div className="sc-season__bar" aria-hidden="true">
-            {SEASON_2026.map((m) => (
-              <span key={m.id} data-st={statuses.get(m.id)} data-cur={m.id === current.id || undefined} />
+          <Card pad={false} className="rc-list">
+            {ahead.map((m) => (
+              <RaceRow key={m.id} m={m} status={statuses.get(m.id)!} onOpen={() => open(m)} />
             ))}
-          </div>
-        </div>
-        <Segmented<Filter>
-          label={t('races.title')}
-          value={filter}
-          onChange={changeFilter}
-          options={[
-            { id: 'all', label: t('ui.all'), count: SEASON_2026.length },
-            { id: 'upcoming', label: t('races.upcoming'), count: SEASON_2026.length - done },
-            { id: 'completed', label: t('races.completed'), count: done },
-          ]}
-        />
-      </div>
-      <div className="sc-rounds" ref={listRef}>
-        {list.length === 0 && (
-          <Card>
-            <Empty icon={<IconCalendar size={26} />} title={t('scr.races.empty')} />
           </Card>
-        )}
-        {list.map((m, i) => {
-          const st = statuses.get(m.id)!;
-          const isCurrent = m.id === current.id;
-          if (isCurrent && st !== 'COMPLETED')
-            return (
-              <div key={m.id} ref={currentRef} className="sc-round-wrap sc-round-wrap--hero" data-st={st}>
-                <RaceHero m={m} status={st} now={now} />
-              </div>
-            );
-          return (
-            <div key={m.id} ref={isCurrent ? currentRef : undefined} className="sc-round-wrap" data-st={st}>
-              <Reveal i={i % 10}>
-                <RoundRow m={m} status={st} onOpen={() => push({ name: 'meeting', meetingId: m.id })} />
-              </Reveal>
-            </div>
-          );
-        })}
-      </div>
+        </section>
+      )}
+
+      {results.length > 0 && (
+        <section className="section">
+          <div className="section__head">
+            <h2 className="section__title">{t('races.results')}</h2>
+          </div>
+          <Card pad={false} className="rc-list">
+            {shown.map((m) => (
+              <RaceRow key={m.id} m={m} status="COMPLETED" onOpen={() => open(m)} />
+            ))}
+            {results.length > 3 && (
+              <button
+                type="button"
+                className="rc-more"
+                aria-expanded={allResults}
+                onClick={() => {
+                  haptic.tap();
+                  setAllResults(!allResults);
+                }}
+              >
+                {allResults ? t('ui.collapse') : t('scr.races.allResults', { n: results.length })}
+                <IconChevron size={14} dir={allResults ? 'up' : 'down'} />
+              </button>
+            )}
+          </Card>
+        </section>
+      )}
     </>
   );
 }
 
-function RoundRow({ m, status, onOpen }: { m: Meeting; status: MeetingStatus; onOpen: () => void }) {
+/** Round, status, country headline, GP name, dates and circuit. Shared by the tab and the meeting screen. */
+function RaceTitle({ m, status, as: H = 'h2' }: { m: Meeting; status: MeetingStatus; as?: 'h1' | 'h2' }) {
   const meta = safeMeta(m.circuitId);
-  const winner = status === 'COMPLETED' ? demoResults(m.id)[0] : undefined;
-  const wd = winner ? DRIVER_BY_ID[winner.driverId] : undefined;
   return (
-    <button className="sc-round" data-st={status} onClick={onOpen} aria-label={`${t('races.round', { n: m.round })}. ${meetingName(m)}`}>
-      <span className="sc-round__no">
-        <span>{t('scr.rnd')}</span>
-        <b className="num">{pad2(m.round)}</b>
+    <span className="rc-title">
+      <span className="rc-title__top">
+        <span>
+          {t('races.round', { n: m.round })}
+          {m.sprint ? ` · ${t('scr.sprint')}` : ''}
+        </span>
+        {(status === 'LIVE' || status === 'NEXT') && <StatusPill status={status} />}
       </span>
-      <span className="sc-round__main">
-        <span className="sc-round__name">
-          <span className="flag">{flagEmoji(m.countryCode)}</span>
-          <span className="ellipsis">{meetingName(m)}</span>
-        </span>
-        <span className="sc-round__meta ellipsis">
-          {meetingDates(m)} · {meta?.shortName ?? ''}
-        </span>
-        <span className="sc-round__tags">
-          <StatusPill status={status} />
-          {m.sprint && <span className="sc-pill sc-pill--sprint">{t('scr.sprint')}</span>}
-          {wd && (
-            <span className="sc-round__win">
-              <IconTrophy size={12} />
-              {wd.code}
-            </span>
-          )}
-        </span>
+      <H className="rc-title__name">
+        <span className="flag">{flagEmoji(m.countryCode)}</span>
+        <span>{countryName(m.countryCode)}</span>
+      </H>
+      <span className="rc-title__gp">{meetingName(m)}</span>
+      <span className="rc-title__meta">
+        {meetingDates(m)} · {meta?.shortName ?? meta?.name}
       </span>
-      <CircuitThumb id={m.circuitId} size={54} />
-    </button>
+    </span>
   );
 }
 
-function RaceHero({ m, status, now }: { m: Meeting; status: MeetingStatus; now: number }) {
+/** The weekend's sessions as a track: done, live, next (lime) and still to come. */
+function WeekendTimeline({ m, now }: { m: Meeting; now: number }) {
+  const next = m.sessions.find((s) => sessState(s, now) !== 'done');
+  return (
+    <ol className="rc-tl" aria-label={t('races.sessions')}>
+      {m.sessions.map((s) => {
+        const at = Date.parse(s.startsAt);
+        return (
+          <li key={s.id} className="rc-tl__s" data-st={sessState(s, now)} data-next={s === next || undefined} aria-label={`${t(`session.${s.kind}`)}: ${fmtDate(at, { weekday: 'long' })}, ${fmtClock(at)}`}>
+            <span className="rc-tl__k" aria-hidden="true">
+              {t(`scr.sess.${s.kind}`)}
+            </span>
+            <span className="rc-tl__dot" aria-hidden="true" />
+            <span className="rc-tl__d" aria-hidden="true">
+              {fmtDate(at, { weekday: 'short' })}
+            </span>
+            <span className="rc-tl__t num" aria-hidden="true">
+              {fmtClock(at)}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function WeekendHero({ m, status, now }: { m: Meeting; status: MeetingStatus; now: number }) {
   const push = useNav((s) => s.push);
-  const meta = safeMeta(m.circuitId);
   const focus = focusSession(m, now);
   const ch = channelFor(m, focus?.s) ?? channelFor(m);
-  const cars = ['#ff8000', '#e8002d', '#3671c6'];
+  const open = () => {
+    haptic.tap();
+    push({ name: 'meeting', meetingId: m.id });
+  };
   return (
-    <Card glow pad={false} className="sc-hero">
-      <div className="sc-hero__map" aria-hidden="true">
-        <CircuitThumb id={m.circuitId} size={190} draw cars={cars} />
+    <section className="card rc-hero">
+      <button type="button" className="rc-hero__head" onClick={open}>
+        <RaceTitle m={m} status={status} />
+        <CircuitThumb id={m.circuitId} size={104} className="rc-hero__track" cars={status === 'LIVE' ? ['#c6ff3d'] : undefined} />
+      </button>
+      {focus && (
+        <div className="rc-hero__next">
+          {focus.live ? (
+            <b className="rc-hero__live">
+              <span className="dot-live" aria-hidden="true" />
+              {t('scr.races.liveNow', { s: t(`session.${focus.s.kind}`) })}
+            </b>
+          ) : (
+            <>
+              <b>{t(`session.${focus.s.kind}`)}</b>
+              <span className="rc-hero__in num" role="timer">
+                {t('scr.races.in', { t: startsIn(Date.parse(focus.s.startsAt) - now) })}
+              </span>
+            </>
+          )}
+        </div>
+      )}
+      <WeekendTimeline m={m} now={now} />
+      <div className="rc-hero__actions">
+        {ch && (
+          <button className="btn btn--primary" onClick={() => watchChannel(ch)}>
+            <IconPlay size={16} />
+            {t('races.watchDemo')}
+          </button>
+        )}
+        <button className="btn btn--ghost" onClick={open}>
+          {t('scr.races.weekend')}
+          <IconChevron size={16} />
+        </button>
       </div>
-      <div className="sc-hero__body">
-        <div className="sc-hero__top">
-          <span className="sc-hero__round">{t('races.round', { n: m.round })}</span>
-          <StatusPill status={status} />
-          {m.sprint && <span className="sc-pill sc-pill--sprint">{t('scr.sprint')}</span>}
-        </div>
-        <div className="sc-hero__name">
+    </section>
+  );
+}
+
+function RaceRow({ m, status, onOpen }: { m: Meeting; status: MeetingStatus; onOpen: () => void }) {
+  const meta = safeMeta(m.circuitId);
+  const podium = status === 'COMPLETED' ? demoResults(m.id).filter((r) => !r.dnf).slice(0, 3) : null;
+  const race = m.sessions.find((s) => s.kind === 'GRAND_PRIX');
+  const raceAt = race ? Date.parse(race.startsAt) : null;
+  return (
+    <button type="button" className="rc-row" onClick={onOpen} aria-label={`${t('races.round', { n: m.round })}. ${meetingName(m)}, ${meetingDates(m)}`}>
+      <DateBlock m={m} />
+      <span className="rc-row__main">
+        <span className="rc-row__name">
           <span className="flag">{flagEmoji(m.countryCode)}</span>
-          <span>{meetingName(m)}</span>
-        </div>
-        <div className="sc-hero__circuit">
-          {meta?.name}
-          {meta?.location ? ` · ${meta.location}` : ''}
-        </div>
-        <div className="sc-hero__dates">
-          <IconCalendar size={14} /> {meetingDates(m)}
-        </div>
-        {focus && (
-          <div className="sc-hero__next">
-            {focus.live ? (
+          <span className="ellipsis">{countryName(m.countryCode)}</span>
+          {podium && <span className="rc-row__place ellipsis">{meta?.shortName}</span>}
+        </span>
+        {podium ? (
+          <span className="rc-pod">
+            {podium.map((r) => (
+              <span key={r.driverId} className="rc-pod__d" data-pos={r.pos}>
+                <TeamBar id={r.driverId} />
+                {DRIVER_BY_ID[r.driverId]?.code}
+              </span>
+            ))}
+          </span>
+        ) : (
+          <span className="rc-row__meta ellipsis">
+            {meta?.shortName}
+            {raceAt !== null && (
               <>
-                <span className="badge badge--live">
-                  <span className="dot-live" />
-                  LIVE
-                </span>
-                <b>{t(`session.${focus.s.kind}`)}</b>
-              </>
-            ) : (
-              <>
-                <span className="sc-hero__nextk">{t('scr.races.startsIn', { s: t(`session.${focus.s.kind}`) })}</span>
-                <span className="sc-hero__nextt num">
-                  {fmtDate(Date.parse(focus.s.startsAt), { weekday: 'short', day: 'numeric', month: 'short' })} · {fmtClock(Date.parse(focus.s.startsAt))}
+                {' · '}
+                <span className="rc-row__when">
+                  <span className="rc-row__k">{t('session.GRAND_PRIX')} </span>
+                  {fmtDate(raceAt, { weekday: 'short' })} {fmtClock(raceAt)}
                 </span>
               </>
             )}
-          </div>
+            {m.sprint ? ` · ${t('scr.sprint')}` : ''}
+          </span>
         )}
-        {focus && !focus.live && <BigCountdown ms={Date.parse(focus.s.startsAt) - now} />}
-        <div className="sc-hero__actions">
-          <button
-            className="btn btn--primary"
-            onClick={() => {
-              haptic.tap();
-              push({ name: 'meeting', meetingId: m.id });
-            }}
-          >
-            {t('scr.races.weekend')}
-            <IconChevron size={16} />
-          </button>
-          {ch && (
-            <button className="btn btn--ghost" onClick={() => watchChannel(ch)}>
-              <IconPlay size={16} />
-              {t('races.watchDemo')}
-            </button>
-          )}
-        </div>
-      </div>
-    </Card>
+      </span>
+      <CircuitThumb id={m.circuitId} size={40} />
+    </button>
   );
 }
 
@@ -300,29 +328,14 @@ function MeetingBody({ m }: { m: Meeting }) {
   let i = 0;
   return (
     <>
-      <SubHeader title={meetingName(m)} onBack={back} />
+      <SubHeader onBack={back} />
       <Reveal i={i++}>
-        <Card glow={status === 'LIVE' || status === 'NEXT'} pad={false} className="sc-mhero">
-          <div className="sc-mhero__map" aria-hidden="true">
-            <CircuitThumb id={m.circuitId} size={170} draw />
+        <section className="card rc-hero rc-hero--static">
+          <div className="rc-hero__head">
+            <RaceTitle m={m} status={status} as="h1" />
+            <CircuitThumb id={m.circuitId} size={104} className="rc-hero__track" cars={status === 'LIVE' ? ['#c6ff3d'] : undefined} />
           </div>
-          <div className="sc-mhero__body">
-            <div className="sc-hero__top">
-              <span className="sc-hero__round">{t('races.round', { n: m.round })}</span>
-              <StatusPill status={status} />
-              {m.sprint && <span className="sc-pill sc-pill--sprint">{t('scr.sprint')}</span>}
-            </div>
-            <div className="sc-mhero__flag">{flagEmoji(m.countryCode)}</div>
-            <h1 className="sc-mhero__name">{meetingName(m)}</h1>
-            <div className="sc-hero__circuit">
-              {meta?.name}
-              {meta?.location ? ` · ${meta.location}` : ''}
-            </div>
-            <div className="sc-hero__dates">
-              <IconCalendar size={14} /> {meetingDates(m)} · {m.season}
-            </div>
-          </div>
-        </Card>
+        </section>
       </Reveal>
 
       <Reveal i={i++} className="section">
@@ -492,7 +505,6 @@ function SessionRow({ m, s, now }: { m: Meeting; s: CalendarSession; now: number
         )}
         {st === 'live' && (
           <span className="badge badge--live">
-            <span className="dot-live" />
             LIVE
           </span>
         )}
@@ -607,7 +619,6 @@ function SessionBody({ ch }: { ch: DemoChannel }) {
               <span className="sc-hero__round">{t(`session.${ch.sessionType}`)}</span>
               {isActive && live && (
                 <span className="badge badge--live">
-                  <span className="dot-live" />
                   LIVE
                 </span>
               )}
@@ -685,4 +696,3 @@ export function NotFound({ onBack }: { onBack: () => void }) {
     </>
   );
 }
-
